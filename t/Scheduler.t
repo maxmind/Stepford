@@ -1,0 +1,68 @@
+use strict;
+use warnings;
+
+use File::Temp qw( tempdir );
+use Path::Class qw( dir );
+use Stepford::Scheduler;
+use Stepford::Step;
+use Time::HiRes qw( stat time );
+
+use Test::More;
+
+my $dir = dir( tempdir( CLEANUP => 1 ) );
+
+{
+    my $a1      = $dir->file('a1');
+    my $step_a1 = Stepford::Step->new(
+        name   => 'build a1',
+        output => $a1,
+        work   => sub { $a1->touch() },
+    );
+
+    my $a2      = $dir->file('a2');
+    my $step_a2 = Stepford::Step->new(
+        name   => 'build a2',
+        output => $a2,
+        work   => sub { $a2->touch() },
+    );
+
+    my $step_update = Stepford::Step->new(
+        name         => 'update a1 and a2',
+        outputs      => [ $a1, $a2 ],
+        dependencies => [ $step_a1, $step_a2 ],
+        work         => sub {
+            $a1->spew("a1\n");
+            $a2->spew("a2\n");
+        },
+    );
+
+    my $combined     = $dir->file('combined');
+    my $step_combine = Stepford::Step->new(
+        name         => 'combine a1 and a2',
+        outputs      => $combined,
+        dependencies => [$step_update],
+        work         => sub {
+            $combined->spew( $a1->slurp(), $a2->slurp() );
+        },
+    );
+
+    my $scheduler = Stepford::Scheduler->new(
+        steps => [ $step_a1, $step_a2, $step_update, $step_combine ],
+    );
+
+    my @plan = map {
+        [ sort map { $_->name() } @{$_} ]
+    } $scheduler->_plan_for($step_combine);
+
+    is_deeply(
+        \@plan,
+        [
+            [ 'build a1', 'build a2' ],
+            ['update a1 and a2'],
+            ['combine a1 and a2']
+        ],
+        'scheduler comes up with the right plan for our steps'
+    );
+}
+
+done_testing();
