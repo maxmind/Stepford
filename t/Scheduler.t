@@ -83,18 +83,15 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
         steps => [ $step_a1, $step_a2, $step_update, $step_combine ],
     );
 
-    my @plan = map {
-        [ sort map { $_->name() } @{$_} ]
-    } $scheduler->_plan_for($step_combine);
-
-    is_deeply(
-        \@plan,
+    _test_plan(
+        $scheduler,
+        $step_combine,
         [
             [ 'build a1', 'build a2' ],
             ['update a1 and a2'],
             ['combine a1 and a2']
         ],
-        'scheduler comes up with the right plan for our steps'
+        'scheduler comes up with the right plan for simple steps'
     );
 
     $scheduler->run( step => $step_combine );
@@ -104,4 +101,62 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
     }
 }
 
+{
+    my $step_a = Test::Step::TouchFile->new(
+        name    => 'A',
+        outputs => $dir->file('A'),
+    );
+
+    my $step_b = Test::Step::TouchFile->new(
+        name         => 'B',
+        dependencies => ['A'],
+        outputs      => $dir->file('B'),
+    );
+
+    my $step_c = Test::Step::TouchFile->new(
+        name         => 'C',
+        dependencies => ['B'],
+        outputs      => $dir->file('C'),
+    );
+
+    my $step_d = Test::Step::TouchFile->new(
+        name         => 'D',
+        dependencies => [ 'B', 'C' ],
+        outputs      => $dir->file('D'),
+    );
+
+    my $scheduler = Stepford::Scheduler->new(
+        steps => [ $step_a, $step_b, $step_c, $step_d ],
+    );
+
+    _test_plan(
+        $scheduler,
+        $step_d,
+        [
+            ['A'],
+            ['B'],
+            ['C'],
+            ['D'],
+        ],
+        'scheduler does not include a given step more than once in a plan'
+    );
+}
+
 done_testing();
+
+sub _test_plan {
+    my $scheduler = shift;
+    my $step      = shift;
+    my $expect    = shift;
+    my $desc      = shift;
+
+    my @plan = map {
+        [ sort map { $_->name() } @{$_} ]
+    } $scheduler->_plan_for($step);
+
+    is_deeply(
+        \@plan,
+        $expect,
+        $desc
+    );
+}

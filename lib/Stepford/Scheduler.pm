@@ -96,6 +96,8 @@ sub _plan_for {
     $self->_add_steps_to_plan( $final_step, \@plan );
     push @plan, [$final_step];
 
+    $self->_clean_plan(\@plan);
+
     return @plan;
 }
 
@@ -113,6 +115,24 @@ sub _add_steps_to_plan {
 
     $self->_add_steps_to_plan( $_, $plan )
         for  @preds;
+
+    return;
+}
+
+sub _clean_plan {
+    my $self = shift;
+    my $plan = shift;
+
+    # First we remove steps we've seen from each set in turn.
+    my %seen;
+    for my $set ( @{$plan} ) {
+        @{$set} = grep { !$seen{ $_->name() } } @{$set};
+
+        $seen{ $_->name() } = 1 for @{$set};
+    }
+
+    # This might leave a set that is empty so we remove that entirely.
+    @{$plan} = grep { @{$_} } @{$plan};
 
     return;
 }
