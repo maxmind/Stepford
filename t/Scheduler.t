@@ -9,6 +9,7 @@ use Stepford::Scheduler;
 use Test::Step::TouchFile;
 use Time::HiRes qw( stat time );
 
+use Test::Fatal;
 use Test::More;
 
 my $dir = dir( tempdir( CLEANUP => 1 ) );
@@ -139,6 +140,32 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
             ['D'],
         ],
         'scheduler does not include a given step more than once in a plan'
+    );
+}
+
+{
+    my $step_a = Test::Step::TouchFile->new(
+        name    => 'A',
+        dependencies => ['B'],
+        outputs => $dir->file('A'),
+    );
+
+    my $step_b = Test::Step::TouchFile->new(
+        name         => 'B',
+        dependencies => ['A'],
+        outputs      => $dir->file('B'),
+    );
+
+    my $e = exception {
+        my $scheduler = Stepford::Scheduler->new(
+            steps => [ $step_a, $step_b ],
+        );
+    };
+
+    like(
+        $e,
+        qr/The set of dependencies passed to the constructor is cyclical/,
+        'cyclical dependencies cause the Scheduler constructor to die'
     );
 }
 
