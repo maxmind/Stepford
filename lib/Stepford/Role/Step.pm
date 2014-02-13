@@ -17,10 +17,9 @@ use Moose::Role;
 requires 'run';
 
 has name => (
-    is      => 'ro',
-    isa     => Str,
-    lazy    => 1,
-    default => sub { ref $_[0] },
+    is       => 'ro',
+    isa      => Str,
+    required => 1,
 );
 
 has scheduler => (
