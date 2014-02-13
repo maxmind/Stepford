@@ -29,6 +29,8 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
 {
     package Test::Step::Combine;
 
+    use Path::Class qw( file );
+
     use Moose;
     with 'Stepford::Role::Step';
 
@@ -49,16 +51,14 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
 {
     my $a1      = $dir->file('a1');
     my $step_a1 = Test::Step::TouchFile->new(
-        name   => 'build a1',
-        output => $a1,
-        work   => sub { $a1->touch() },
+        name    => 'build a1',
+        outputs => $a1,
     );
 
     my $a2      = $dir->file('a2');
     my $step_a2 = Test::Step::TouchFile->new(
-        name   => 'build a2',
-        output => $a2,
-        work   => sub { $a2->touch() },
+        name    => 'build a2',
+        outputs => $a2,
     );
 
     my $step_update = Test::Step::SpewEach->new(
@@ -96,6 +96,12 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
         ],
         'scheduler comes up with the right plan for our steps'
     );
+
+    $scheduler->run( step => $step_combine );
+
+    for my $file ( $a1, $a2, $combined ) {
+        ok( -f $file, $file->basename() . ' file exists' );
+    }
 }
 
 done_testing();

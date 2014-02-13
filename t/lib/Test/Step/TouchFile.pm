@@ -1,6 +1,8 @@
 package Test::Step::TouchFile;
 
 use Moose;
+use MooseX::StrictConstructor;
+
 with 'Stepford::Role::Step';
 
 sub run {

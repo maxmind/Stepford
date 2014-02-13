@@ -5,10 +5,12 @@ use warnings;
 use namespace::autoclean;
 
 use Graph::Directed;
+use MooseX::Params::Validate qw( validated_list );
 use Scalar::Util qw( blessed );
 use Stepford::Types qw( ArrayRef HashRef Step );
 
 use Moose;
+use MooseX::StrictConstructor;
 
 has _steps => (
     traits   => ['Array'],
@@ -49,7 +51,10 @@ sub BUILD {
 
 sub add_step {
     my $self = shift;
-    my $step = shift;
+    my $step = validated_list(
+        \@_,
+        step => { isa => Step },
+    );
 
     $step->add_scheduler($self);
     $self->_add_step($step);
@@ -60,8 +65,11 @@ sub add_step {
 }
 
 sub run {
-    my $self       = shift;
-    my $final_step = shift;
+    my $self = shift;
+    my $final_step = validated_list(
+        \@_,
+        step => { isa => Step },
+    );
 
     my @plan = $self->_plan_for($final_step);
 
