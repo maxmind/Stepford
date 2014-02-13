@@ -12,15 +12,17 @@ use MooseX::Types -declare => [
         ArrayOfDependencies
         ArrayOfFiles
         Dependency
+        Step
         )
 ];
 
 subtype Dependency, as Defined, inline_as {
-    "( defined $_[1] && !ref $_[1] && length $_[1] )
-        || (
-        blessed( $_[1] )
-        && (   $_[1]->isa(q{Stepford::Step})
-            || $_[1]->isa(q{Path::Class::File}) )"
+    <<"EOF";
+    ( defined $_[1] && !ref $_[1] && length $_[1] )
+        || ( blessed( $_[1] )
+        && $_[1]->can('does')
+        && $_[1]->does(q{Stepford::Step}) );
+EOF
 };
 
 subtype ArrayOfDependencies, as ArrayRef [Dependency];
@@ -32,5 +34,7 @@ subtype ArrayOfFiles, as ArrayRef [File], inline_as {
 };
 
 coerce ArrayOfFiles, from File, via { [$_] };
+
+role_type Step, { role => 'Stepford::Role::Step' };
 
 1;

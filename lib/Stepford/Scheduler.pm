@@ -5,14 +5,14 @@ use warnings;
 
 use Graph::Directed;
 use Scalar::Util qw( blessed );
-use Stepford::Types qw( ArrayRef HashRef );
+use Stepford::Types qw( ArrayRef HashRef Step );
 
 use Moose;
 
 has _steps => (
     traits   => ['Array'],
     is       => 'bare',
-    isa      => ArrayRef ['Stepford::Step'],
+    isa      => ArrayRef [Step],
     init_arg => 'steps',
     handles  => {
         steps     => 'elements',
@@ -113,10 +113,10 @@ sub step_for_name {
     my $dep  = shift;
 
     if ( blessed($dep) ) {
-        return $dep if $dep->isa('Stepford::Step');
+        return $dep if $dep->can('does') && $dep->does('Stepford::Role::Step');
 
         Stepford::Error->throw(
-            "Cannot resolve a dependency that is not a Stepford::Step or step name as a string (got $dep)"
+            "Cannot resolve a dependency that is not a string or an object that does the Stepford::Role::Step role (got $dep)"
         );
     }
     else {

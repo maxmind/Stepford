@@ -1,10 +1,12 @@
 use strict;
 use warnings;
 
+use lib 't/lib';
+
 use File::Temp qw( tempdir );
 use Path::Class qw( dir );
 use Stepford::Scheduler;
-use Stepford::Step;
+use Test::Step::TouchFile;
 use Time::HiRes qw( stat time );
 
 use Test::More;
@@ -12,21 +14,54 @@ use Test::More;
 my $dir = dir( tempdir( CLEANUP => 1 ) );
 
 {
+    package Test::Step::SpewEach;
+
+    use Moose;
+    with 'Stepford::Role::Step';
+
+    sub run {
+        my $self = shift;
+
+        $_->spew( $_->basename() . "\n" ) for $self->_outputs();
+    }
+}
+
+{
+    package Test::Step::Combine;
+
+    use Moose;
+    with 'Stepford::Role::Step';
+
+    has sources => (
+        is       => 'ro',
+        isa      => 'ArrayRef',
+        required => 1,
+    );
+
+    sub run {
+        my $self = shift;
+
+        ( $self->_outputs() )[0]
+            ->spew( map { file($_)->slurp() } @{ $self->sources() } );
+    }
+}
+
+{
     my $a1      = $dir->file('a1');
-    my $step_a1 = Stepford::Step->new(
+    my $step_a1 = Test::Step::TouchFile->new(
         name   => 'build a1',
         output => $a1,
         work   => sub { $a1->touch() },
     );
 
     my $a2      = $dir->file('a2');
-    my $step_a2 = Stepford::Step->new(
+    my $step_a2 = Test::Step::TouchFile->new(
         name   => 'build a2',
         output => $a2,
         work   => sub { $a2->touch() },
     );
 
-    my $step_update = Stepford::Step->new(
+    my $step_update = Test::Step::SpewEach->new(
         name         => 'update a1 and a2',
         outputs      => [ $a1, $a2 ],
         dependencies => [ $step_a1, $step_a2 ],
@@ -37,13 +72,11 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
     );
 
     my $combined     = $dir->file('combined');
-    my $step_combine = Stepford::Step->new(
+    my $step_combine = Test::Step::Combine->new(
         name         => 'combine a1 and a2',
         outputs      => $combined,
         dependencies => [$step_update],
-        work         => sub {
-            $combined->spew( $a1->slurp(), $a2->slurp() );
-        },
+        sources      => [ $a1, $a2 ],
     );
 
     my $scheduler = Stepford::Scheduler->new(

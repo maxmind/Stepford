@@ -1,26 +1,25 @@
-package Stepford::Step;
+package Stepford::Role::Step;
 
 use strict;
 use warnings;
 
 use List::AllUtils qw( all max );
 use Stepford::Error;
-use Stepford::Types qw( ArrayOfDependencies ArrayOfFiles CodeRef Str );
+use Stepford::Types
+    qw( ArrayOfDependencies ArrayOfFiles ArrayRef CodeRef Step Str );
+
 # Sadly, there's no (sane) way to make Path::Class::File use this
 use Time::HiRes qw( stat );
 
-use Moose;
+use Moose::Role;
+
+requires 'run';
 
 has name => (
-    is       => 'ro',
-    isa      => Str,
-    required => 1,
-);
-
-has work => (
-    is       => 'ro',
-    isa      => CodeRef,
-    required => 1,
+    is      => 'ro',
+    isa     => Str,
+    lazy    => 1,
+    default => sub { ref $_[0] },
 );
 
 has scheduler => (
@@ -57,6 +56,7 @@ has _dependencies => (
 has _resolved_dependencies => (
     traits   => ['Array'],
     is       => 'bare',
+    isa      => ArrayRef [Step],
     init_arg => undef,
     lazy     => 1,
     builder  => '_build_resolved_dependencies',
@@ -78,17 +78,30 @@ has _outputs => (
     },
 );
 
-sub run {
+around run => sub {
+    my $orig = shift;
     my $self = shift;
 
     return if $self->is_fresh();
 
-    my $work = $self->work();
-    $self->$work();
+    my @return;
+    if (wantarray) {
+        @return = $self->$orig(@_);
+    }
+    elsif ( defined wantarray ) {
+        $return[0] = $self->$orig(@_);
+    }
+    else {
+        $self->$orig(@_);
+    }
+
     $self->_record_run();
 
-    return;
-}
+    return unless defined wantarray;
+    return wantarray
+        ? @return
+        : $return[0];
+};
 
 sub is_fresh {
     my $self = shift;
@@ -97,8 +110,8 @@ sub is_fresh {
         for my $output ( $self->_outputs() ) {
             return 0 unless -f $output;
 
-            return all { $_->is_older_than($output) }
-            $self->_resolved_dependencies();
+            return all { $_->_is_older_than($output) }
+            $self->resolved_dependencies();
         }
     }
     else {
@@ -106,7 +119,7 @@ sub is_fresh {
     }
 }
 
-sub is_older_than {
+sub _is_older_than {
     my $self = shift;
     my $file = shift;
 
@@ -121,6 +134,8 @@ sub is_older_than {
 sub _build_resolved_dependencies {
     my $self = shift;
 
+    return [] unless $self->_has_dependencies();
+
     Stepford::Error->throw(
         'Something asked for resolved dependencies before this step was added to the scheduler'
     ) unless $self->_has_scheduler();
@@ -128,7 +143,5 @@ sub _build_resolved_dependencies {
     return [ map { $self->scheduler()->step_for_name($_) }
             $self->_dependencies() ];
 }
-
-__PACKAGE__->meta()->make_immutable();
 
 1;

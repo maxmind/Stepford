@@ -1,9 +1,11 @@
 use strict;
 use warnings;
 
+use lib 't/lib';
+
 use File::Temp qw( tempdir );
 use Path::Class qw( dir );
-use Stepford::Step;
+use Test::Step::TouchFile;
 use Time::HiRes qw( stat time );
 
 use Test::More;
@@ -12,17 +14,16 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
 
 {
     my $file1 = $dir->file('step1');
-    my $step1 = Stepford::Step->new(
+    my $step1 = Test::Step::TouchFile->new(
         name    => 'step 1',
         outputs => $file1,
-        work    => sub { $file1->touch() },
     );
 
     my $exists1 = $dir->file('exists1');
     $exists1->touch();
 
     ok(
-        !$step1->is_older_than($exists1),
+        !$step1->_is_older_than($exists1),
         q{step 1 is older than a file that exists when the step hasn't been run yet}
     );
 
@@ -42,6 +43,5 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
         'calling run() a second time does nothing'
     );
 }
-
 
 done_testing();
