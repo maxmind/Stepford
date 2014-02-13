@@ -2,6 +2,7 @@ package Stepford::Scheduler;
 
 use strict;
 use warnings;
+use namespace::autoclean;
 
 use Graph::Directed;
 use Scalar::Util qw( blessed );

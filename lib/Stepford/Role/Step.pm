@@ -2,6 +2,7 @@ package Stepford::Role::Step;
 
 use strict;
 use warnings;
+use namespace::autoclean;
 
 use List::AllUtils qw( all max );
 use Stepford::Error;
