@@ -19,8 +19,8 @@ has _outputs => (
     init_arg => 'outputs',
     default  => sub { [] },
     handles  => {
-        _has_outputs => 'count',
-        _outputs     => 'elements',
+        _file_count => 'count',
+        _outputs    => 'elements',
     },
 );
 
