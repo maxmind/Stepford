@@ -3,7 +3,7 @@ package Test::Step::TouchFile;
 use Moose;
 use MooseX::StrictConstructor;
 
-with 'Stepford::Role::Step';
+with 'Stepford::Role::Step::FileGenerator';
 
 sub run {
     ( $_[0]->_outputs() )[0]->touch();

@@ -7,6 +7,7 @@ use namespace::autoclean;
 use Graph::Directed;
 use MooseX::Params::Validate qw( validated_list );
 use Scalar::Util qw( blessed );
+use Stepford::Error;
 use Stepford::Types qw( ArrayRef HashRef Step );
 
 use Moose;

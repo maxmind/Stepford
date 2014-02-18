@@ -4,16 +4,11 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-use List::AllUtils qw( max );
-use Stepford::Error;
 use Stepford::Types qw( ArrayOfDependencies ArrayOfFiles Str );
-
-# Sadly, there's no (sane) way to make Path::Class::File use this
-use Time::HiRes qw( stat );
 
 use Moose::Role;
 
-requires 'run';
+requires qw( run last_run_time );
 
 has name => (
     is       => 'ro',
@@ -55,12 +50,6 @@ sub is_up_to_date_since {
     return 0 unless defined $last_run;
 
     return $last_run > $timestamp;
-}
-
-sub last_run_time {
-    my $self = shift;
-
-    return max( map { ( stat $_ )[9] } $self->_outputs() );
 }
 
 1;

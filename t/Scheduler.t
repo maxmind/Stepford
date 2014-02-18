@@ -18,7 +18,7 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
     package Test::Step::SpewEach;
 
     use Moose;
-    with 'Stepford::Role::Step';
+    with 'Stepford::Role::Step::FileGenerator';
 
     sub run {
         my $self = shift;
@@ -33,7 +33,7 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
     use Path::Class qw( file );
 
     use Moose;
-    with 'Stepford::Role::Step';
+    with 'Stepford::Role::Step::FileGenerator';
 
     has sources => (
         is       => 'ro',
