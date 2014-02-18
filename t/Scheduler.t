@@ -65,7 +65,7 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
     my $step_update = Test::Step::SpewEach->new(
         name         => 'update a1 and a2',
         outputs      => [ $a1, $a2 ],
-        dependencies => [ $step_a1, $step_a2 ],
+        dependencies => [ map { $_->name() } $step_a1, $step_a2 ],
         work         => sub {
             $a1->spew("a1\n");
             $a2->spew("a2\n");
@@ -76,7 +76,7 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
     my $step_combine = Test::Step::Combine->new(
         name         => 'combine a1 and a2',
         outputs      => $combined,
-        dependencies => [$step_update],
+        dependencies => [ $step_update->name() ],
         sources      => [ $a1, $a2 ],
     );
 
@@ -145,9 +145,9 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
 
 {
     my $step_a = Test::Step::TouchFile->new(
-        name    => 'A',
+        name         => 'A',
         dependencies => ['B'],
-        outputs => $dir->file('A'),
+        outputs      => $dir->file('A'),
     );
 
     my $step_b = Test::Step::TouchFile->new(
