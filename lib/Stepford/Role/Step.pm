@@ -6,8 +6,7 @@ use namespace::autoclean;
 
 use List::AllUtils qw( max );
 use Stepford::Error;
-use Stepford::Types
-    qw( ArrayOfDependencies ArrayOfFiles Str );
+use Stepford::Types qw( ArrayOfDependencies ArrayOfFiles Str );
 
 # Sadly, there's no (sane) way to make Path::Class::File use this
 use Time::HiRes qw( stat );
