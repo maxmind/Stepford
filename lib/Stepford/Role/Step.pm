@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-use Stepford::Types qw( ArrayOfDependencies ArrayOfFiles Str );
+use Stepford::Types qw( ArrayOfDependencies Str );
 
 use Moose::Role;
 
@@ -26,19 +26,6 @@ has _dependencies => (
     handles  => {
         _has_dependencies => 'count',
         dependencies     => 'elements',
-    },
-);
-
-has _outputs => (
-    traits   => ['Array'],
-    is       => 'bare',
-    isa      => ArrayOfFiles,
-    coerce   => 1,
-    init_arg => 'outputs',
-    default  => sub { [] },
-    handles  => {
-        _has_outputs => 'count',
-        _outputs     => 'elements',
     },
 );
 
