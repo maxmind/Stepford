@@ -65,7 +65,7 @@ sub add_step {
 }
 
 sub run {
-    my $self = shift;
+    my $self       = shift;
     my $final_step = validated_list(
         \@_,
         step => { isa => Step },
@@ -73,15 +73,10 @@ sub run {
 
     my @plan = $self->_plan_for($final_step);
 
-    my %done;
     for my $set (@plan) {
 
         # Note that we could easily parallelize this bit
         for my $step ( @{$set} ) {
-
-            # If a step is a dependency for 2+ other steps it can show up more
-            # than once, but we know we only need to run it once.
-            next if $done{ $step->name() };
             $step->run();
         }
     }
