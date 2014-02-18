@@ -4,10 +4,10 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-use List::AllUtils qw( all max );
+use List::AllUtils qw( max );
 use Stepford::Error;
 use Stepford::Types
-    qw( ArrayOfDependencies ArrayOfFiles ArrayRef CodeRef Step Str );
+    qw( ArrayOfDependencies ArrayOfFiles Str );
 
 # Sadly, there's no (sane) way to make Path::Class::File use this
 use Time::HiRes qw( stat );
@@ -22,24 +22,6 @@ has name => (
     required => 1,
 );
 
-has scheduler => (
-    is        => 'rw',
-    writer    => 'set_scheduler',
-    isa       => 'Stepford::Scheduler',
-    weak_ref  => 1,
-    predicate => '_has_scheduler',
-);
-
-has already_ran => (
-    traits   => ['Bool'],
-    is       => 'ro',
-    init_arg => undef,
-    default  => 0,
-    handles  => {
-        _record_run => 'set',
-    },
-);
-
 has _dependencies => (
     traits   => ['Array'],
     is       => 'bare',
@@ -49,19 +31,7 @@ has _dependencies => (
     default  => sub { [] },
     handles  => {
         _has_dependencies => 'count',
-        _dependencies     => 'elements',
-    },
-);
-
-has _resolved_dependencies => (
-    traits   => ['Array'],
-    is       => 'bare',
-    isa      => ArrayRef [Step],
-    init_arg => undef,
-    lazy     => 1,
-    builder  => '_build_resolved_dependencies',
-    handles  => {
-        resolved_dependencies => 'elements',
+        dependencies     => 'elements',
     },
 );
 
@@ -78,70 +48,20 @@ has _outputs => (
     },
 );
 
-around run => sub {
-    my $orig = shift;
-    my $self = shift;
+sub is_up_to_date_since {
+    my $self      = shift;
+    my $timestamp = shift;
 
-    return if $self->is_fresh();
+    my $last_run = $self->last_run_time();
+    return 0 unless defined $last_run;
 
-    my @return;
-    if (wantarray) {
-        @return = $self->$orig(@_);
-    }
-    elsif ( defined wantarray ) {
-        $return[0] = $self->$orig(@_);
-    }
-    else {
-        $self->$orig(@_);
-    }
-
-    $self->_record_run();
-
-    return unless defined wantarray;
-    return wantarray
-        ? @return
-        : $return[0];
-};
-
-sub is_fresh {
-    my $self = shift;
-
-    if ( $self->_has_outputs() ) {
-        for my $output ( $self->_outputs() ) {
-            return 0 unless -f $output;
-
-            return all { $_->_is_older_than($output) }
-            $self->resolved_dependencies();
-        }
-    }
-    else {
-        return 0;
-    }
+    return $last_run > $timestamp;
 }
 
-sub _is_older_than {
-    my $self = shift;
-    my $file = shift;
-
-    for my $output ( $self->_outputs() ) {
-        return 0 unless -f $output;
-        return 0 if ( stat($output) )[9] < ( stat($file) )[9];
-    }
-
-    return 1;
-}
-
-sub _build_resolved_dependencies {
+sub last_run_time {
     my $self = shift;
 
-    return [] unless $self->_has_dependencies();
-
-    Stepford::Error->throw(
-        'Something asked for resolved dependencies before this step was added to the scheduler'
-    ) unless $self->_has_scheduler();
-
-    return [ map { $self->scheduler()->step_for_name($_) }
-            $self->_dependencies() ];
+    return max( map { ( stat $_ )[9] } $self->_outputs() );
 }
 
 1;

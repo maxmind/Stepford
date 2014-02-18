@@ -42,8 +42,6 @@ has _step_map => (
 sub BUILD {
     my $self = shift;
 
-    $_->set_scheduler($self) for $self->steps();
-
     $self->_check_dependency_graph('passed to the constructor');
 
     return;
@@ -77,6 +75,8 @@ sub run {
 
         # Note that we could easily parallelize this bit
         for my $step ( @{$set} ) {
+            next if $self->_step_is_fresh($step);
+
             $step->run();
         }
     }
@@ -102,7 +102,7 @@ sub _add_steps_to_plan {
     my $plan     = shift;
 
     my @preds
-        = map { $self->step_for_name($_) }
+        = map { $self->_step_for_name($_) }
         $self->_graph()->predecessors( $for_step->name() )
         or return;
 
@@ -132,7 +132,23 @@ sub _clean_plan {
     return;
 }
 
-sub step_for_name {
+sub _step_is_fresh {
+    my $self = shift;
+    my $step = shift;
+
+    for my $dep ( $self->_resolved_dependencies_for($step) ) {
+        return 0 unless $step->is_up_to_date_since( $dep->last_run_time() );
+    }
+}
+
+sub _resolved_dependencies_for {
+    my $self = shift;
+    my $step = shift;
+
+    return map { $self->_step_for_name($_) } $step->dependencies();
+}
+
+sub _step_for_name {
     my $self = shift;
     my $dep  = shift;
 
@@ -157,7 +173,7 @@ sub _build_graph {
     my $graph = Graph::Directed->new();
 
     for my $step ( $self->steps() ) {
-        for my $dep ( $step->resolved_dependencies() ) {
+        for my $dep ( $self->_resolved_dependencies_for($step) ) {
             $graph->add_edge( $dep->name() => $step->name() );
         }
     }

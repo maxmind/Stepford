@@ -23,7 +23,7 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
     $exists1->touch();
 
     ok(
-        !$step1->_is_older_than($exists1),
+        !$step1->is_up_to_date_since( ( stat $exists1 )[9] ),
         q{step 1 is older than a file that exists when the step hasn't been run yet}
     );
 
