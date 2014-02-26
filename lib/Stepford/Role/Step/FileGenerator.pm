@@ -29,7 +29,7 @@ with 'Stepford::Role::Step';
 sub last_run_time {
     my $self = shift;
 
-    return max( map { ( stat $_ )[9] } $self->_outputs() );
+    return max( map { ( stat $_ )[9] } grep { -f } $self->_outputs() );
 }
 
 1;
