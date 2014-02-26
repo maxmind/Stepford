@@ -3,7 +3,7 @@ package Stepford::Types::Internal;
 use strict;
 use warnings;
 
-use MooseX::Types::Common::String qw( NonEmptySimpleStr );
+use MooseX::Types::Common::String qw( NonEmptyStr );
 use MooseX::Types::Moose qw( ArrayRef Defined Str );
 use MooseX::Types::Path::Class qw( File );
 use Scalar::Util qw( blessed );
@@ -16,9 +16,9 @@ use MooseX::Types -declare => [
         )
 ];
 
-subtype ArrayOfDependencies, as ArrayRef [NonEmptySimpleStr];
+subtype ArrayOfDependencies, as ArrayRef [NonEmptyStr];
 
-coerce ArrayOfDependencies, from NonEmptySimpleStr, via { [$_] };
+coerce ArrayOfDependencies, from NonEmptyStr, via { [$_] };
 
 subtype ArrayOfFiles, as ArrayRef [File], inline_as {
     $_[0]->parent()->_inline_check( $_[1] ) . " && \@{ $_[1] } >= 1";
