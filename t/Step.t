@@ -6,7 +6,7 @@ use lib 't/lib';
 use File::Temp qw( tempdir );
 use Path::Class qw( dir );
 use Test::Step::TouchFile;
-use Time::HiRes qw( stat time );
+use Time::HiRes qw( stat );
 
 use Test::More;
 
@@ -31,16 +31,6 @@ my $dir = dir( tempdir( CLEANUP => 1 ) );
     ok(
         -f $file1,
         'calling run() on step 1 touches file1'
-    );
-
-    my $mtime = ( stat($file1) )[9];
-    sleep 1 unless Time::HiRes::d_hires_stat();
-
-    $step1->run();
-    is(
-        $mtime,
-        ( stat($file1) )[9],
-        'calling run() a second time does nothing'
     );
 }
 
