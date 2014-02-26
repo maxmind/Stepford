@@ -29,3 +29,5 @@ coerce ArrayOfFiles, from File, via { [$_] };
 role_type Step, { role => 'Stepford::Role::Step' };
 
 1;
+
+# ABSTRACT: Internal type definitions for Stepford

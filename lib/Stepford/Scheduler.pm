@@ -201,3 +201,72 @@ sub _build_step_map {
 __PACKAGE__->meta()->make_immutable();
 
 1;
+
+# ABSTRACT: Takes a set of steps and figures out what order to run them in
+
+__END__
+
+=for Pod::Coverage BUILD add_step
+
+=head1 SYNOPSIS
+
+    use Stepford::Scheduler;
+
+    my @steps = (
+        My::Step::Step1->new(
+            name => 'step 1',
+            ...
+        ),
+        My::Step::Step2->new(
+            name => 'step 2',
+            ...
+        ),
+        My::Step::MakeSomething->new(
+            name         => 'Generate a file',
+            dependencies => [ 'step 1', 'step 2' ],
+        ),
+    );
+
+    my $target_step = $steps[-1];
+
+    # Runs all the steps needed to get to the $final_step.
+    Stepford::Scheduler->new(
+        steps => \@steps,
+    )->run($final_step);
+
+=head1 DESCRIPTION
+
+This class takes a set of objects which do the L<Stepford::Role::Step> role
+and figured out in what order they should be run in order to get to a final
+step.
+
+Steps which are up to date are skipped during the run, so no unnecessary work
+is done.
+
+=head1 METHODS
+
+This class provides the following methods:
+
+=head2 Stepford::Scheduler->new(...)
+
+This returns a new scheduler object.
+
+It accepts a single argument, C<steps>. This should be an array reference
+containing one or more objects which do the L<Stepford::Role::Step> role.
+
+The constructor checks for circular dependencies among the steps and will
+throw a L<Stepford::Error> exception if it finds one.
+
+=head2 $scheduler->run($step)
+
+Given a step object, the scheduler creates an execution plan of all the steps
+needed to get to that step.
+
+For each step, the scheduler checks if it is up to date compared to its
+dependencies (as determined by the C<< $step->last_run_time() >> method. If
+the step is up to date, it is skipped, otherwise the scheduler calls C<<
+$step->run() >> on the step.
+
+=head2 $scheduler->steps()
+
+This methods returns a list of the steps in the scheduler.

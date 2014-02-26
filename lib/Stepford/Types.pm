@@ -15,3 +15,5 @@ __PACKAGE__->provide_types_from(
 );
 
 1;
+
+# ABSTRACT: Type library used in Stepford classes/roles
