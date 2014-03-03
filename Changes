@@ -1,5 +1,13 @@
 {{$NEXT}}
 
+- The tests now require Time::HiRes 1.9722. It seems like the version shipped
+  before Perl 5.16 (1.9721_01) has a weird bug when used like this:
+
+      some_sub( (stat $file)[9] );
+
+  It seems to return the value "9" rather than the mtime.
+
+
 0.000001 2014-02-25
 
 - First release upon an unsuspecting world.
