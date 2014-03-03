@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.000002 2014-03-03
+
 - The tests now require Time::HiRes 1.9722. It seems like the version shipped
   before Perl 5.16 (1.9721_01) has a weird bug when used like this:
 
