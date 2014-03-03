@@ -6,7 +6,7 @@ use lib 't/lib';
 use File::Temp qw( tempdir );
 use Path::Class qw( dir );
 use Test::Step::TouchFile;
-use Time::HiRes qw( stat );
+use Time::HiRes 1.9722 qw( stat );
 
 use Test::More;
 

@@ -7,7 +7,7 @@ use File::Temp qw( tempdir );
 use Path::Class qw( dir );
 use Stepford::Scheduler;
 use Test::Step::TouchFile;
-use Time::HiRes qw( stat time );
+use Time::HiRes 1.9722 qw( stat time );
 
 use Test::Fatal;
 use Test::More;
