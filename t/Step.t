@@ -36,6 +36,8 @@ use Test::More;
         is     => 'ro',
     );
 
+    sub run { }
+
     sub last_run_time { time }
 }
 
@@ -50,45 +52,6 @@ is_deeply(
     [qw( output_file1 output_file2)],
     'Step1->productions returns the expected attributes'
 );
-
-{
-    my $step = Step1->new(
-        input_file1               => 'foo',
-        input_file2               => 'bar',
-        prior_steps_last_run_time => undef,
-    );
-
-    ok(
-        !$step->is_up_to_date(),
-        'step is not up to date when there is no prior_steps_last_run_time'
-    );
-}
-
-{
-    my $step = Step1->new(
-        input_file1               => 'foo',
-        input_file2               => 'bar',
-        prior_steps_last_run_time => 42,
-    );
-
-    ok(
-        $step->is_up_to_date(),
-        'step up to date when there prior_steps_last_run_time is less than last_run_time'
-    );
-}
-
-{
-    my $step = Step1->new(
-        input_file1               => 'foo',
-        input_file2               => 'bar',
-        prior_steps_last_run_time => time + 100_000,
-    );
-
-    ok(
-        !$step->is_up_to_date(),
-        'step up to date when there prior_steps_last_run_time is greater than last_run_time'
-    );
-}
 
 {
     package FileStep;
@@ -116,7 +79,7 @@ is_deeply(
         default => sub { $tempdir->file('file2') },
     );
 
-    sub touch_files {
+    sub run {
         my $self = shift;
 
         $self->output_file1()->touch();
@@ -134,7 +97,7 @@ is_deeply(
         q{no last run time when output files don't exist}
     );
 
-    $step->touch_files();
+    $step->run();
     is(
         $step->last_run_time(),
         ( stat $step->output_file2() )[9],
@@ -151,15 +114,17 @@ is_deeply(
     with 'Stepford::Role::Step::FileGenerator';
 
     has output1 => (
-        traits  => ['StepProduction'],
-        is      => 'ro',
-        isa     => Str,
+        traits => ['StepProduction'],
+        is     => 'ro',
+        isa    => Str,
     );
 
     has output2 => (
         traits => ['StepProduction'],
         is     => 'ro',
     );
+
+    sub run { }
 }
 
 {
