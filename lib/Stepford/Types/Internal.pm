@@ -10,11 +10,25 @@ use Scalar::Util qw( blessed );
 
 use MooseX::Types -declare => [
     qw(
+        ArrayOfClassPrefixes
         ArrayOfDependencies
         ArrayOfFiles
+        PossibleClassName
         Step
         )
 ];
+
+subtype PossibleClassName, as Str, inline_as {
+    $_[0]->parent()->_inline_check( $_[1] ) . ' && '
+        . $_[1]
+        . ' =~ /^\\p{L}\\w*(?:::\\w+)*$/';
+};
+
+subtype ArrayOfClassPrefixes, as ArrayRef [PossibleClassName], inline_as {
+    $_[0]->parent()->_inline_check( $_[1] ) . " && \@{ $_[1] } >= 1";
+};
+
+coerce ArrayOfClassPrefixes, from PossibleClassName, via { [$_] };
 
 subtype ArrayOfDependencies, as ArrayRef [NonEmptyStr];
 

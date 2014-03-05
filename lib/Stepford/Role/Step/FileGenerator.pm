@@ -4,32 +4,42 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
+use Carp qw( croak );
 use List::AllUtils qw( max );
-use Stepford::Types qw( ArrayOfFiles );
+use Stepford::Types qw( File );
 # Sadly, there's no (sane) way to make Path::Class::File use this
 use Time::HiRes qw( stat );
 
 use Moose::Role;
 
-has _outputs => (
-    traits   => ['Array'],
-    is       => 'bare',
-    isa      => ArrayOfFiles,
-    coerce   => 1,
-    required => 1,
-    init_arg => 'outputs',
-    handles  => {
-        _file_count => 'count',
-        _outputs    => 'elements',
-    },
-);
-
 with 'Stepford::Role::Step';
+
+sub BUILD { }
+before BUILD => sub {
+    my $self = shift;
+
+    my @not_files = sort map { $_->name() } grep {
+        !(     $_->has_type_constraint()
+            && $_->type_constraint()->is_a_type_of(File) )
+    } $self->productions();
+
+    croak 'The '
+        . ( ref $self )
+        . ' class consumed the Stepford::Role::Step::FileGenerator role but contains'
+        . " the following productions which are not files: @not_files"
+            if @not_files;
+
+    return;
+};
 
 sub last_run_time {
     my $self = shift;
 
-    return max( map { ( stat $_ )[9] } grep { -f } $self->_outputs() );
+    my @times = map { ( stat $_ )[9] }
+        grep { -f }
+        map  { $_->get_read_method_ref()->($self) } $self->productions();
+
+    return max @times;
 }
 
 1;
