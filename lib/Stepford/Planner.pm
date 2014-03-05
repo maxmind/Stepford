@@ -113,9 +113,12 @@ sub run {
                 map  { $_->last_run_time() } @previous_steps
             );
 
+            my $step_last_run_time = $step->last_run_time();
+
             $step->run()
                 unless defined $previous_steps_last_run_time
-                && $step->is_up_to_date_since($previous_steps_last_run_time);
+                && defined $step_last_run_time
+                && $step_last_run_time >= $previous_steps_last_run_time;
 
             for my $production ( $step->productions() ) {
                 my $reader = $production->get_read_method_ref();

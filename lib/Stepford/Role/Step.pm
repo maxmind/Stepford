@@ -28,14 +28,6 @@ sub dependencies {
         $class->meta()->get_all_attributes();
 }
 
-sub is_up_to_date_since {
-    my $self  = shift;
-    my $since = shift;
-
-    return defined $self->last_run_time()
-        && $self->last_run_time() >= $since;
-}
-
 1;
 
 # ABSTRACT: The basic role all step classes must implement
