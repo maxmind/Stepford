@@ -246,12 +246,7 @@ sub _build_production_map {
     my %map;
     for my $class ( $self->_step_classes() ) {
         for my $attr ( map { $_->name() } $class->productions() ) {
-            if ( exists $map{$attr} ) {
-                Stepford::Error->throw(
-                    "Both $class and $map{$attr} both have a production named $attr."
-                        . " You cannot have two steps which have the same production."
-                );
-            }
+            next if exists $map{$attr};
 
             $map{$attr} = $class;
         }

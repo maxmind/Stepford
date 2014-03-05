@@ -471,20 +471,15 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 }
 
 {
-    my $e = exception {
-        Stepford::Planner->new(
-            step_namespaces => 'Test6::Step',
-            final_step      => 'Test6::Step::A2',
-        );
-    };
+    my $planner = Stepford::Planner->new(
+        step_namespaces => 'Test6::Step',
+        final_step      => 'Test6::Step::A2',
+    );
 
-    like(
-        $e,
-        qr/
-              \QBoth Test6::Step::A2 and Test6::Step::A1 both have a production named thing_a. \E
-              \QYou cannot have two steps which have the same production.\E
-          /x,
-        'cannot have two steps with identically named productions'
+    is(
+        $planner->_production_map()->{thing_a},
+        'Test6::Step::A1',
+        'when two steps have the same production, choose the one that sorts first'
     );
 }
 
