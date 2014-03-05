@@ -121,8 +121,8 @@ sub run {
                 && $step_last_run_time >= $previous_steps_last_run_time;
 
             for my $production ( $step->productions() ) {
-                my $reader = $production->get_read_method_ref();
-                $productions{ $production->name() } = $reader->($step);
+                my $reader = $production->get_read_method();
+                $productions{ $production->name() } = $step->$reader()
             }
 
             push @current_steps, $step;

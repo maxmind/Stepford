@@ -37,7 +37,7 @@ sub last_run_time {
 
     my @times = map { ( stat $_ )[9] }
         grep { -f }
-        map  { $_->get_read_method_ref()->($self) } $self->productions();
+        map  { $self->${ \( $_->get_read_method() ) } } $self->productions();
 
     return max @times;
 }
