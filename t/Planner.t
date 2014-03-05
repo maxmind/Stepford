@@ -483,6 +483,51 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
     );
 }
 
+{
+    package Test7::Step::A;
+
+    use Stepford::Types qw( File );
+
+    use Moose;
+    with 'Stepford::Role::Step::FileGenerator';
+
+    has content => (
+        is      => 'ro',
+        default => 'default content',
+    );
+
+    has file => (
+        traits  => ['StepProduction'],
+        is      => 'ro',
+        isa     => File,
+        default => sub { $tempdir->file('test7-step-a') },
+    );
+
+    sub run {
+        $_[0]->file()->spew( $_[0]->content() );
+    }
+
+    sub last_run_time { }
+}
+
+{
+    my $planner = Stepford::Planner->new(
+        step_namespaces => 'Test7::Step',
+        final_step      => 'Test7::Step::A',
+    );
+
+    $planner->run(
+        content => 'new content',
+        ignored => 42,
+    );
+
+    is(
+        scalar $tempdir->file('test7-step-a')->slurp(),
+        'new content',
+        'values passed to $planner->run() are passed to step constructor'
+    );
+}
+
 done_testing();
 
 sub _test_plan {
