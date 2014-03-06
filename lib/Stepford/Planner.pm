@@ -103,7 +103,8 @@ sub run {
                 map  { $_->init_arg() } $class->meta()->get_all_attributes()
                 ) {
                 $args{$init_arg} = $config{$init_arg}
-                    if exists $config{$init_arg};
+                    if exists $config{$init_arg}
+                    && !exists $productions{$init_arg};
             }
 
             my $step = $class->new( \%args );
