@@ -83,31 +83,12 @@ sub run {
 
         # Note that we could easily parallelize this bit
         for my $class ( @{$set} ) {
-            my %args;
-            for my $dep ( map { $_->name() } $class->dependencies() ) {
-
-                # XXX - I'm not sure this error is reachable. We already check
-                # that a class's declared dependencies can be satisfied while
-                # building the graph. That said, it doesn't hurt to leave this
-                # check in here, and it might help illuminate bugs in the
-                # Planner itself.
-                Stepford::Error->throw(
-                    "Cannot construct a $class object. We are missing a required production: $dep"
-                ) unless exists $productions{$dep};
-
-                $args{$dep} = $productions{$dep};
-            }
-
-            for my $init_arg (
-                grep { defined }
-                map  { $_->init_arg() } $class->meta()->get_all_attributes()
-                ) {
-                $args{$init_arg} = $config{$init_arg}
-                    if exists $config{$init_arg}
-                    && !exists $productions{$init_arg};
-            }
-
-            my $step = $class->new( \%args );
+            my $args = $self->_constructor_args_for_class(
+                $class,
+                \%productions,
+                \%config,
+            );
+            my $step = $class->new($args);
 
             my $previous_steps_last_run_time = max(
                 grep { defined }
@@ -121,7 +102,7 @@ sub run {
                 && defined $step_last_run_time
                 && $step_last_run_time >= $previous_steps_last_run_time;
 
-            $self->_update_productions(\%productions, $step);
+            $self->_update_productions( \%productions, $step );
 
             push @current_steps, $step;
         }
@@ -173,6 +154,38 @@ sub _clean_plan {
     @{$plan} = grep { @{$_} } @{$plan};
 
     return;
+}
+
+sub _constructor_args_for_class {
+    my $self        = shift;
+    my $class       = shift;
+    my $productions = shift;
+    my $config      = shift;
+
+    my %args;
+    for my $init_arg (
+        grep { defined }
+        map  { $_->init_arg() } $class->meta()->get_all_attributes()
+        ) {
+        $args{$init_arg} = $config->{$init_arg}
+            if exists $config->{$init_arg};
+    }
+
+    for my $dep ( map { $_->name() } $class->dependencies() ) {
+
+        # XXX - I'm not sure this error is reachable. We already check
+        # that a class's declared dependencies can be satisfied while
+        # building the graph. That said, it doesn't hurt to leave this
+        # check in here, and it might help illuminate bugs in the
+        # Planner itself.
+        Stepford::Error->throw(
+            "Cannot construct a $class object. We are missing a required production: $dep"
+        ) unless exists $productions->{$dep};
+
+        $args{$dep} = $productions->{$dep};
+    }
+
+    return \%args;
 }
 
 sub _update_productions {
