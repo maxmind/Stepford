@@ -121,10 +121,7 @@ sub run {
                 && defined $step_last_run_time
                 && $step_last_run_time >= $previous_steps_last_run_time;
 
-            for my $production ( $step->productions() ) {
-                my $reader = $production->get_read_method();
-                $productions{ $production->name() } = $step->$reader()
-            }
+            $self->_update_productions(\%productions, $step);
 
             push @current_steps, $step;
         }
@@ -174,6 +171,19 @@ sub _clean_plan {
 
     # This might leave a set that is empty so we remove that entirely.
     @{$plan} = grep { @{$_} } @{$plan};
+
+    return;
+}
+
+sub _update_productions {
+    my $self        = shift;
+    my $productions = shift;
+    my $step        = shift;
+
+    for my $production ( $step->productions() ) {
+        my $reader = $production->get_read_method();
+        $productions->{ $production->name() } = $step->$reader();
+    }
 
     return;
 }
