@@ -7,6 +7,7 @@ use namespace::autoclean;
 use Graph::Directed;
 use List::AllUtils qw( first max );
 use Module::Pluggable::Object;
+use Module::Runtime qw( use_module );
 use MooseX::Params::Validate qw( validated_list );
 use Scalar::Util qw( blessed );
 use Stepford::Error;
@@ -242,11 +243,16 @@ sub _build_step_classes {
 
     # Module::Pluggable does not document whether it returns class names in
     # any specific order.
-    return [
-        sort { $sorter->() } Module::Pluggable::Object->new(
-            search_path => [ $self->step_namespaces() ]
-        )->plugins()
-    ];
+    my @classes
+        = sort { $sorter->() }
+        Module::Pluggable::Object->new(
+        search_path => [ $self->step_namespaces() ] )->plugins();
+
+    for my $class (@classes) {
+        use_module($class) unless $class->can('run');
+    }
+
+    return \@classes;
 }
 
 sub _step_class_sorter {
