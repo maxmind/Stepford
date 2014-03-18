@@ -12,7 +12,7 @@ use MooseX::Params::Validate qw( validated_list );
 use Scalar::Util qw( blessed );
 use Stepford::Error;
 use Stepford::Types
-    qw( ArrayOfClassPrefixes ArrayRef ClassName HashRef Step );
+    qw( ArrayOfClassPrefixes ArrayRef ClassName HashRef Logger Step );
 
 use Moose;
 use MooseX::StrictConstructor;
@@ -33,6 +33,13 @@ has final_step => (
     is       => 'ro',
     isa      => Step,
     required => 1,
+);
+
+has logger => (
+    is      => 'ro',
+    isa     => Logger,
+    lazy    => 1,
+    builder => '_build_logger',
 );
 
 has _step_classes => (
@@ -89,6 +96,8 @@ sub run {
                 \%productions,
                 \%config,
             );
+
+            $self->logger()->debug("$class->new()");
             my $step = $class->new($args);
 
             my $previous_steps_last_run_time = max(
@@ -98,10 +107,18 @@ sub run {
 
             my $step_last_run_time = $step->last_run_time();
 
-            $step->run()
-                unless defined $previous_steps_last_run_time
+            if (   defined $previous_steps_last_run_time
                 && defined $step_last_run_time
-                && $step_last_run_time >= $previous_steps_last_run_time;
+                && $step_last_run_time >= $previous_steps_last_run_time ) {
+
+                $self->logger()->info(
+                          "Last run time for $class is $step_last_run_time."
+                        . " Previous steps last run time is $previous_steps_last_run_time."
+                        . ' Skipping this step.' );
+            }
+            else {
+                $step->run();
+            }
 
             $self->_update_productions( \%productions, $step );
 
@@ -120,6 +137,11 @@ sub _plan_for_final_step {
     push @plan, [ $self->final_step() ];
 
     $self->_clean_plan( \@plan );
+
+    $self->logger()
+        ->info( 'Plan for '
+            . $self->final_step() . ': '
+            . $self->_plan_as_string( \@plan ) );
 
     return @plan;
 }
@@ -157,6 +179,13 @@ sub _clean_plan {
     return;
 }
 
+sub _plan_as_string {
+    my $self = shift;
+    my $plan = shift;
+
+    return join ' => ', map { '[ ' . ( join ', ', @{$_} ) . ' ]' } @{$plan};
+}
+
 sub _constructor_args_for_class {
     my $self        = shift;
     my $class       = shift;
@@ -185,6 +214,8 @@ sub _constructor_args_for_class {
 
         $args{$dep} = $productions->{$dep};
     }
+
+    $args{logger} = $self->logger();
 
     return \%args;
 }
@@ -289,6 +320,15 @@ sub _build_production_map {
     }
 
     return \%map;
+}
+
+sub _build_logger {
+    my $self = shift;
+
+    require Log::Dispatch;
+    require Log::Dispatch::Null;
+    return Log::Dispatch->new(
+        outputs => [ [ Null => min_level => 'emerg' ] ] );
 }
 
 __PACKAGE__->meta()->make_immutable();

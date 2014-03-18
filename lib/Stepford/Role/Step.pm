@@ -6,11 +6,17 @@ use namespace::autoclean;
 
 use Stepford::Trait::StepDependency;
 use Stepford::Trait::StepProduction;
-use Stepford::Types qw( ArrayOfDependencies Maybe PositiveNum Str );
+use Stepford::Types qw( ArrayOfDependencies Logger Maybe PositiveNum Str );
 
 use Moose::Role;
 
 requires qw( run last_run_time );
+
+has logger => (
+    is       => 'ro',
+    isa      => Logger,
+    required => 1,
+);
 
 sub productions {
     my $class = shift;

@@ -4,6 +4,8 @@ use warnings;
 use lib 't/lib';
 
 use File::Temp qw( tempdir );
+use Log::Dispatch;
+use Log::Dispatch::Array;
 use Path::Class qw( dir );
 use Stepford::Planner;
 use Time::HiRes 1.9722 qw( stat time );
@@ -170,9 +172,22 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 }
 
 {
+    my @messages;
+    my $logger = Log::Dispatch->new(
+        outputs => [
+            [
+                'Array',
+                name      => 'array',
+                array     => \@messages,
+                min_level => 'debug',
+            ]
+        ]
+    );
+
     my $planner = Stepford::Planner->new(
         step_namespaces => 'Test1::Step',
         final_step      => 'Test1::Step::CombineFiles',
+        logger          => $logger,
     );
 
     _test_plan(
@@ -186,13 +201,61 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
         'planner comes up with the right plan for simple steps'
     );
 
+    @messages = ();
+
     $planner->run();
+    like(
+        $messages[0]{message},
+        qr/Plan for Test1::Step::CombineFiles/,
+        'logged plan when ->run() was called'
+    );
+
+    like(
+        $messages[0]{message},
+        qr/
+              \Q[ Test1::Step::CreateA1, Test1::Step::CreateA2 ] => \E
+              \Q[ Test1::Step::UpdateFiles ] => [ Test1::Step::CombineFiles ]\E
+          /x,
+        'logged a readable description of the plan'
+    );
+
+    is(
+        $messages[0]{level},
+        'info',
+        'log level for plan description is info'
+    );
+
+    is(
+        $messages[1]{message},
+        'Test1::Step::CreateA1->new()',
+        'logged a message indicating that a step was being created'
+    );
+
+    is(
+        $messages[1]{level},
+        'debug',
+        'log level for object creation is debug'
+    );
 
     for my $file ( map { $tempdir->file($_) } qw( a1 a2 combined ) ) {
         ok( -f $file, $file->basename() . ' file exists' );
     }
 
+    @messages = ();
+
     $planner->run();
+
+    like(
+        $messages[-1]{message},
+        qr/^\QLast run time for Test1::Step::CombineFiles is \E.+\QSkipping this step./,
+        'logged a message when skipping a step'
+    );
+
+    is(
+        $messages[-1]{level},
+        'info',
+        'log level for skipping a step is info'
+    );
 
     my %expect_run = (
         CreateA1     => 2,

@@ -1,10 +1,15 @@
 use strict;
 use warnings;
 
+use Log::Dispatch;
+use Log::Dispatch::Null;
 use Time::HiRes qw( stat );
 
 use Test::Fatal;
 use Test::More;
+
+my $logger = Log::Dispatch->new(
+    outputs => [ [ Null => min_level => 'emerg' ] ] );
 
 {
     package Step1;
@@ -90,7 +95,10 @@ is_deeply(
 }
 
 {
-    my $step = FileStep->new( prior_steps_last_run_time => 1 );
+    my $step = FileStep->new(
+        prior_steps_last_run_time => 1,
+        logger                    => $logger,
+    );
 
     is(
         $step->last_run_time(), undef,
@@ -128,8 +136,12 @@ is_deeply(
 }
 
 {
-    my $e
-        = exception { FileStep::Bad->new( prior_steps_last_run_time => 1 ) };
+    my $e = exception {
+        FileStep::Bad->new(
+            prior_steps_last_run_time => 1,
+            logger                    => $logger,
+        );
+    };
     like(
         $e,
         qr/
