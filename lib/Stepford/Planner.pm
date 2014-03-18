@@ -264,6 +264,8 @@ sub _build_graph {
         }
     }
 
+    $self->logger()->debug("Graph is $graph");
+
     return $graph;
 }
 
@@ -286,6 +288,7 @@ sub _build_step_classes {
         # We need to skip roles
         next unless $class->isa('Moose::Object');
 
+        $self->logger()->debug("Found step class $class");
         push @classes, $class;
     }
 
