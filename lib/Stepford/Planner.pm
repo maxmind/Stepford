@@ -239,17 +239,23 @@ sub _build_graph {
 sub _build_step_classes {
     my $self = shift;
 
-    my $sorter = $self->_step_class_sorter();
-
     # Module::Pluggable does not document whether it returns class names in
     # any specific order.
-    my @classes
-        = sort { $sorter->() }
-        Module::Pluggable::Object->new(
-        search_path => [ $self->step_namespaces() ] )->plugins();
+    my $sorter = $self->_step_class_sorter();
 
-    for my $class (@classes) {
+    my @classes;
+
+    for my $class (
+        sort { $sorter->() } Module::Pluggable::Object->new(
+            search_path => [ $self->step_namespaces() ]
+        )->plugins()
+        ) {
+
         use_module($class) unless $class->can('run');
+        # We need to skip roles
+        next unless $class->isa('Moose::Object');
+
+        push @classes, $class;
     }
 
     return \@classes;
