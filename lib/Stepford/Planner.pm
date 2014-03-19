@@ -84,8 +84,8 @@ sub run {
     my $self   = shift;
     my %config = @_;
 
+    my @all_steps;
     my @previous_steps;
-    my %productions;
     for my $set ( $self->_plan_for_final_step( \%config ) ) {
         my @current_steps;
 
@@ -93,7 +93,7 @@ sub run {
         for my $class ( @{$set} ) {
             my $args = $self->_constructor_args_for_class(
                 $class,
-                \%productions,
+                \@all_steps,
                 \%config,
             );
 
@@ -120,12 +120,11 @@ sub run {
                 $step->run();
             }
 
-            $self->_update_productions( \%productions, $step );
-
             push @current_steps, $step;
         }
 
         @previous_steps = @current_steps;
+        push @all_steps, @current_steps;
     }
 }
 
@@ -187,10 +186,10 @@ sub _plan_as_string {
 }
 
 sub _constructor_args_for_class {
-    my $self        = shift;
-    my $class       = shift;
-    my $productions = shift;
-    my $config      = shift;
+    my $self      = shift;
+    my $class     = shift;
+    my $all_steps = shift;
+    my $config    = shift;
 
     my %args;
     for my $init_arg (
@@ -201,7 +200,10 @@ sub _constructor_args_for_class {
             if exists $config->{$init_arg};
     }
 
+    # This bit could be optimized by caching the values of productions that
+    # we've already seen during this run.
     for my $dep ( map { $_->name() } $class->dependencies() ) {
+        my $provider = first { $_->has_production($dep) } @{$all_steps};
 
         # XXX - I'm not sure this error is reachable. We already check
         # that a class's declared dependencies can be satisfied while
@@ -210,27 +212,14 @@ sub _constructor_args_for_class {
         # Planner itself.
         Stepford::Error->throw(
             "Cannot construct a $class object. We are missing a required production: $dep"
-        ) unless exists $productions->{$dep};
+        ) unless $provider;
 
-        $args{$dep} = $productions->{$dep};
+        $args{$dep} = $provider->production_value($dep);
     }
 
     $args{logger} = $self->logger();
 
     return \%args;
-}
-
-sub _update_productions {
-    my $self        = shift;
-    my $productions = shift;
-    my $step        = shift;
-
-    for my $production ( $step->productions() ) {
-        my $reader = $production->get_read_method();
-        $productions->{ $production->name() } = $step->$reader();
-    }
-
-    return;
 }
 
 sub _build_graph {
