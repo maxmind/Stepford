@@ -41,7 +41,7 @@ subtype ArrayOfFiles, as ArrayRef [File], inline_as {
 
 coerce ArrayOfFiles, from File, via { [$_] };
 
-duck_type Logger, [qw( debug info )];
+duck_type Logger, [qw( debug info notice warning error )];
 
 role_type Step, { role => 'Stepford::Role::Step' };
 
