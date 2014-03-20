@@ -163,8 +163,10 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
         my $self = shift;
 
         $self->combined_file()->spew(
-            map { $_->slurp() } $self->a1_file_updated(),
-            $self->a2_file_updated()
+            [
+                map { $_->slurp() } $self->a1_file_updated(),
+                $self->a2_file_updated()
+            ]
         );
     }
 
