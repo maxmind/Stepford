@@ -12,3 +12,5 @@ sub Moose::Meta::Attribute::Custom::Trait::StepProduction::register_implementati
 }
 
 1;
+
+#ABSTRACT: A trait for attributes which are a step production

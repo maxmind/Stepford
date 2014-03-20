@@ -335,35 +335,17 @@ __END__
 
 =head1 SYNOPSIS
 
-    use Stepford::Scheduler;
+    use Stepford::Planner;
 
-    my @steps = (
-        My::Step::Step1->new(
-            name => 'step 1',
-            ...
-        ),
-        My::Step::Step2->new(
-            name => 'step 2',
-            ...
-        ),
-        My::Step::MakeSomething->new(
-            name         => 'Generate a file',
-            dependencies => [ 'step 1', 'step 2' ],
-        ),
-    );
-
-    my $target_step = $steps[-1];
-
-    # Runs all the steps needed to get to the $final_step.
-    Stepford::Scheduler->new(
-        steps => \@steps,
-    )->run($final_step);
+    Stepford::Planner->new(
+        step_namespaces => 'My::Step',
+        final_step      => 'My::Step::MakeSomething',
+    )->run();
 
 =head1 DESCRIPTION
 
 This class takes a set of objects which do the L<Stepford::Role::Step> role
-and figured out in what order they should be run in order to get to a final
-step.
+and determines what order they should be run so as to get to a final step.
 
 Steps which are up to date are skipped during the run, so no unnecessary work
 is done.
@@ -372,26 +354,83 @@ is done.
 
 This class provides the following methods:
 
-=head2 Stepford::Scheduler->new(...)
+=head2 Stepford::Planner->new(...)
 
-This returns a new scheduler object.
+This method returns a new planner object. It accepts the following arguments:
 
-It accepts a single argument, C<steps>. This should be an array reference
-containing one or more objects which do the L<Stepford::Role::Step> role.
+=over 4
+
+=item * step_namespaces
+
+This argument is required.
+
+This can either be a string or an array reference of strings. Each string
+should contain a namespace which contains step classes.
+
+For example, if your steps are named C<My::Step::CreateFoo>,
+C<My::Step::MergeFooAndBar>, and C<My::Step::DeployMergedFooAndBar>, the
+namespace you'd provide is C<'My::Step'>.
+
+The order of the step namespaces I<is> relevant. If more than one step has a
+production of the same name, then the first step "wins". Stepford sorts step
+class names based on the order of the namespaces provided to the constructor,
+and then the full name of the class. You can take advantage of this feature to
+provide different steps in a different environments (for example, for testing).
 
 The constructor checks for circular dependencies among the steps and will
 throw a L<Stepford::Error> exception if it finds one.
 
-=head2 $scheduler->run($step)
+=item * final_step
 
-Given a step object, the scheduler creates an execution plan of all the steps
-needed to get to that step.
+This argument is required.
 
-For each step, the scheduler checks if it is up to date compared to its
+This is the final step that the planner should run when the C<<
+$planner->run() >> method is called. This should be a valid (loaded) class
+that does the L<Stepford::Role::Step> role.
+
+=item * logger
+
+This argument is optional.
+
+This should be an object that provides C<debug()>, C<info()>, C<notice()>,
+C<warning()>, and C<error()> methods.
+
+This object will receive log messages from the planner and (possibly your
+steps).
+
+If this is not provided, Stepford will create a L<Log::Dispatch> object with a
+single L<Log::Dispatch::Null> output (which silently eats all the logging
+messages).
+
+Note that if you I<do> provide a logger object of your own, Stepford will not
+load L<Log::Dispatch> into memory.
+
+=back
+
+=head2 $planner->run()
+
+When this method is called, the planner comes up with a plan of the steps
+needed to get to the final step given to the constructor and runs them in
+order.
+
+For each step, the planner checks if it is up to date compared to its
 dependencies (as determined by the C<< $step->last_run_time() >> method. If
-the step is up to date, it is skipped, otherwise the scheduler calls C<<
+the step is up to date, it is skipped, otherwise the planner calls C<<
 $step->run() >> on the step.
 
-=head2 $scheduler->steps()
+Note that the step objects are always I<constructed>, so you should avoid
+doing a lot of work in your constructor. Save that for the C<run()> method.
 
-This methods returns a list of the steps in the scheduler.
+=head2 $planner->step_namespaces()
+
+This method returns the step namespaces passed to the constructor as a list
+(not an arrayref).
+
+=head2 $planner->final_step()
+
+This method returns the C<final_step> argument passed to the constructor.
+
+=head2 $planner->logger()
+
+This method returns the C<logger> used by the planner, either what you passed
+to the constructor or a default.

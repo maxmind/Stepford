@@ -5,7 +5,7 @@ use warnings;
 
 1;
 
-# ABSTRACT: A vaguely Rake/Make/Cake-like thing for Perl - create steps and schedule them
+# ABSTRACT: A vaguely Rake/Make/Cake-like thing for Perl - create steps and let a planner run them
 
 __END__
 
@@ -13,44 +13,50 @@ __END__
 
     package My::Step::MakeSomething;
 
+    use autodie;
     use Moose;
+
+    has input_file => (
+        traits   => ['StepDependency'],
+        is       => 'ro',
+        required => 1,
+    );
+
+    has output_file => (
+        traits  => ['StepProduction'],
+        is      => 'ro',
+        default => '/path/to/file',
+    );
 
     with 'StepFord::Role::Step::FileGenerator';
 
     sub run {
+        my $self = shift;
 
-        # write some files somehow
+        open my $input_fh,  '<', $self->input_file();
+        open my $output_fh, '>', $self->output_file();
+        while (<$input_fh>) {
+            chomp;
+            print {$output_fh} $_ * 2, "\n";
+        }
+        close $input_fh;
+        close $output_fh;
     }
 
     package My::Runner;
 
-    use Stepford::Scheduler;
-
-    my @steps = (
-        My::Step::Step1->new(
-            name => 'step 1',
-            ...
-        ),
-        My::Step::Step2->new(
-            name => 'step 2',
-            ...
-        ),
-        My::Step::MakeSomething->new(
-            name         => 'Generate a file',
-            dependencies => [ 'step 1', 'step 2' ],
-        ),
-    );
-
-    my $target_step = $steps[-1];
+    use My::Step::MakeSomething;
+    use Stepford::Planner;
 
     # Runs all the steps needed to get to the $final_step.
     Stepford::Scheduler->new(
-        steps => \@steps,
-    )->run($final_step);
+        step_namespaces => 'My::Step',
+        final_step      => 'My::Step::MakeSomething',
+    )->run();
 
 =head1 DESCRIPTION
 
-B<NOTE: This is some alpha ju^H^Hcode. You have been warned!>
+B<NOTE: This is alpha code. You have been warned!>
 
 Stepford provides a framework for running a set of steps that are dependent on
 other steps. At a high level, this is a lot like Make, Rake, etc. However, the
@@ -61,17 +67,77 @@ With Stepford, each step is represented by a class you create. That class
 should consume either the L<StepFord::Role::Step::FileGenerator> role (if it
 generates files) or the L<StepFord::Role::Step> step (if it doesn't).
 
-You then instantiate step objects for each step, giving each step a name and
-explicitly specifying its dependencies. Finally, you pass all these steps to a
-L<Stepford::Scheduler> and tell it to run a given step. The scheduler runs all
-the dependent steps (and their dependencies and so on).
+Steps declare both their dependencies (required inputs) and productions
+(outputs) as attributes. These attributes should be given either the
+C<StepDependency> or C<StepProduction> trait as appropriate.
+
+The L<Stepford::Planner> class analyzes the dependencies and productions for
+each step to figure out what steps it needs to run in order to satisfy the
+dependencies of the final step you specify.
 
 Each step can specify a C<last_run_time()> method (or get one from the
-L<StepFord::Role::Step::FileGenerator> role). The scheduler uses this to skip
+L<StepFord::Role::Step::FileGenerator> role). The planner uses this to skip
 steps that are up to date.
 
-See L<Stepford::Scheduler>, L<Stepford::Role::Step>, and
+See L<Stepford::Planner>, L<Stepford::Role::Step>, and
 L<StepFord::Role::Step::FileGenerator> for more details.
+
+=head1 CONCEPTS AND DESIGN
+
+In order to understand how Stepford works you must understand a few key concepts.
+
+First off, we have steps. A step is simply a self-contained unit of work, like
+generating a file, populating a database, etc. There are no restrictions on
+what steps can do. The only restriction is that they are expected to declare
+their dependencies and/or productions (more these below).
+
+Each step is a L<Moose> class. Each step class should represent a concrete
+action, not a higher-level concept. In other words, the class name should be
+something like "CopyFooBarFilesToProduction", B<not> "CopyFiles". If you have
+several steps that all share similar logic, you can use a role to share that
+logic between classes.
+
+Each step must declare its dependencies and/or productions as regular Moose
+attributes. These attributes can contain any type of value. They are simply
+data.
+
+A dependency is simply a value that a given step expects to get from another
+step (they can also be supplied to the planner manully).
+
+The flip side of a dependency is a production. This is a value that the step
+will generate as needed.
+
+Steps are run by a L<Stepford::Planner> object. To create this object, you
+give it a list of step namespaces and the class of the final step you want to
+run. The planner looks at the final step's dependencies and uses this
+information to figure out what other steps to run. It looks for steps with
+productions that satisfy these dependencies and adds any matching steps to the
+execution plan. It does this iteratively for each step it adds to the plan
+until the dependencies are satisfied for every step.
+
+The planner detects cyclic dependencies (A requires B requires C requires B)
+and throws an error. It also detects when a step has a dependency that cannot
+be satisfied by the production of any other step.
+
+Note that the matching of production to dependency is done solely by
+name. It's up to you to ensure that the output of a production is something
+that satisfies the dependency (in terms of the value's type, content, etc.).
+
+If multiple classes have a production of the same name, then the first class
+that Stepford sees "wins". This can be useful if you want to override a step
+for testing, for example. See the documentation of the L<Stepford::Planner>
+class's C<new()> method for more details on step namespaces.
+
+It is not possible for a class to have an attribute that is simultaneously a
+dependency and a production. This would be a natural design for a step that
+transformed a data value, but it makes dependency resolution
+impossible. However, nothing stops you from having two attributes that each
+produce the same B<value>. For example, the attributes could both reference a
+path on disk and the step's C<run()> method could alter the content of that
+file in place.
+
+It is not currently possible for a class to have optional dependencies. This
+may be added in the future if it turns out to be useful.
 
 =head1 FUTURE FEATURES
 
@@ -79,18 +145,11 @@ There are several very obvious things that should be added to this framework:
 
 =over 4
 
-=item * Logging
-
-The scheduler and steps should all accept some sort of optional log object and
-tell it what they're doing.
-
 =item * Dry runs
-
-This requires logging, of course.
 
 =item * Parallel running
 
-Since the scheduler know what steps depend on what other steps, it can also
+Since the planner know what steps depend on what other steps, it can also
 figure out when things can be run in parallel.
 
 =back
