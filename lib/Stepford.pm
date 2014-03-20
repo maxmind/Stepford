@@ -89,7 +89,7 @@ In order to understand how Stepford works you must understand a few key concepts
 First off, we have steps. A step is simply a self-contained unit of work, like
 generating a file, populating a database, etc. There are no restrictions on
 what steps can do. The only restriction is that they are expected to declare
-their dependencies and/or productions (more these below).
+their dependencies and/or productions (more on these below).
 
 Each step is a L<Moose> class. Each step class should represent a concrete
 action, not a higher-level concept. In other words, the class name should be
