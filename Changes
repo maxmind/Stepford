@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+- Totally redesigned the whole thing after discussions with Greg Oschwald here
+  at MaxMind. I did say this was alpha!
+
+
 0.000002 2014-03-03
 
 - The tests now require Time::HiRes 1.9722. It seems like the version shipped
