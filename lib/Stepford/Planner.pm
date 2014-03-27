@@ -150,7 +150,7 @@ sub _add_steps_to_plan {
     my $for_step = shift;
     my $plan     = shift;
 
-    my @preds = $self->_graph()->predecessors($for_step)
+    my @preds = sort $self->_graph()->predecessors($for_step)
         or return;
 
     unshift @{$plan}, \@preds;
