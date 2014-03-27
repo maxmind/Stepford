@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+- (Hopefully) Fix some test failures that look they're caused by hash
+  randomization. Reported by Slaven Rezic. GitHub issue #1.
+
+
 0.001000 2014-03-20
 
 - Totally redesigned the whole thing after discussions with Greg Oschwald here
