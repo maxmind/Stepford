@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.001001 2014-03-27
+
 - (Hopefully) Fix some test failures that look they're caused by hash
   randomization. Reported by Slaven Rezic. GitHub issue #1.
 
