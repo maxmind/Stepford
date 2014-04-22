@@ -8,7 +8,7 @@ use Carp qw( croak );
 use List::AllUtils qw( max );
 use Stepford::Types qw( File );
 # Sadly, there's no (sane) way to make Path::Class::File use this
-use Time::HiRes qw( stat );
+use Time::HiRes 1.9726 qw( stat );
 
 use Moose::Role;
 

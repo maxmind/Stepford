@@ -8,7 +8,7 @@ use Log::Dispatch;
 use Log::Dispatch::Array;
 use Path::Class qw( dir );
 use Stepford::Planner;
-use Time::HiRes 1.9722 qw( stat time );
+use Time::HiRes 1.9726 qw( stat time );
 
 use Test::Fatal;
 use Test::More;

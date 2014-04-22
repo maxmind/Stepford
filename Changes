@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+- Require Time::HiRes 1.9726. Some earlier versions broke constructs like
+  (stat $file)[9]. This construct is used in the Stepford::Role::FileGenerator
+  role.
+
+
 0.001001 2014-03-27
 
 - (Hopefully) Fix some test failures that look they're caused by hash
