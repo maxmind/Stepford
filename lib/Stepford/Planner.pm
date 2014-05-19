@@ -516,7 +516,7 @@ load L<Log::Dispatch> into memory.
 =head2 $planner->run()
 
 When this method is called, the planner comes up with a plan of the steps
-needed to get to the final step given to the constructor and runs them in
+needed to get to the final steps given to the constructor and runs them in
 order.
 
 For each step, the planner checks if it is up to date compared to its
