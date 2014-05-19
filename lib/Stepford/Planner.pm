@@ -432,13 +432,15 @@ __END__
 
     Stepford::Planner->new(
         step_namespaces => 'My::Step',
-        final_step      => 'My::Step::MakeSomething',
+        final_steps =>
+            [ 'My::Step::MakeSomething', 'My::Step::MakeSomethingElse' ],
     )->run();
 
 =head1 DESCRIPTION
 
 This class takes a set of objects which do the L<Stepford::Role::Step> role
-and determines what order they should be run so as to get to a final step.
+and determines what order they should be run so as to get to one or more final
+steps.
 
 Steps which are up to date are skipped during the run, so no unnecessary work
 is done.
@@ -473,13 +475,24 @@ provide different steps in a different environments (for example, for testing).
 The constructor checks for circular dependencies among the steps and will
 throw a L<Stepford::Error> exception if it finds one.
 
-=item * final_step
+=item * final_steps
 
 This argument is required.
 
-This is the final step that the planner should run when the C<<
-$planner->run() >> method is called. This should be a valid (loaded) class
-that does the L<Stepford::Role::Step> role.
+This can either be a string or an array reference of strings. Each string
+should be a step's class name. These classes must already be loaded and they
+must do the L<Stepford::Role::Step> role.
+
+These are the final steps run when the C<< $planner->run() >> method is
+called.
+
+=item * jobs
+
+This argument default to 1.
+
+The number of jobs to run at a time. By default, all steps are run
+sequentially. However, if you set this to a value greater than 1 then the
+planner will run steps in parallel, up to the value you set.
 
 =item * logger
 
@@ -527,3 +540,13 @@ This method returns the C<final_step> argument passed to the constructor.
 
 This method returns the C<logger> used by the planner, either what you passed
 to the constructor or a default.
+
+=head1 PARALLEL RUN CAVEATS
+
+When running steps in parallel, the results of a step (its productions) are
+sent from a child process to the parent by serializing them. This means that
+productions which can't be serialized (like a L<DBI> handle) will probably
+blow up in some way. You'll need to find a way to work around this. For
+example, instead of passing a DBI handle you could pass a data structure with
+a DSN, username, password, and connection options.
+
