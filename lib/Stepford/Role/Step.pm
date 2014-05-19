@@ -35,6 +35,14 @@ sub has_production {
     return any { $_->name() eq $name } $class->productions();
 }
 
+sub productions_as_hash {
+    my $self = shift;
+
+    return
+        map { $_->name() => $self->production_value( $_->name() ) }
+        $self->productions();
+}
+
 sub production_value {
     my $self = shift;
     my $name = shift;
