@@ -13,6 +13,7 @@ use MooseX::Types -declare => [
         ArrayOfClassPrefixes
         ArrayOfDependencies
         ArrayOfFiles
+        ArrayOfSteps
         Logger
         PossibleClassName
         Step
@@ -44,6 +45,10 @@ coerce ArrayOfFiles, from File, via { [$_] };
 duck_type Logger, [qw( debug info notice warning error )];
 
 role_type Step, { role => 'Stepford::Role::Step' };
+
+subtype ArrayOfSteps, as ArrayRef [Step];
+
+coerce ArrayOfSteps, from Step, via { [$_] };
 
 1;
 

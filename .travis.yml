@@ -1,0 +1,27 @@
+language: perl
+
+perl:
+   - 5.19
+   - 5.18
+   - 5.16
+   - 5.14
+   - 5.12
+   - 5.10
+
+before_install:
+   - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=j10:c HARNESS_TIMER=1 SKIP_POD_LINKCHECK=1
+
+install:
+   - cpanm --quiet --notest --skip-satisfied Dist::Zilla~5 Dist::Zilla::Plugin::PodWeaver Dist::Zilla::PluginBundle::ROKR Pod::Coverage::Moose Pod::Weaver::Section::Contributors Test::NoTabs Test::Spelling
+   - "dzil authordeps --missing | xargs -n 5 -P 10 cpanm --quiet --notest"
+   - "dzil listdeps --author --missing | grep -v MaxMind::DB | cpanm --quiet --notest"
+
+script:
+   - dzil test --release
+
+notifications:
+  email:
+    recipients:
+      - dev@maxmind.com
+    on_success: change
+    on_failure: always

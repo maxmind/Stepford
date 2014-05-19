@@ -10,168 +10,11 @@ use Path::Class qw( dir );
 use Stepford::Planner;
 use Time::HiRes 1.9726 qw( stat time );
 
+use Test::Differences;
 use Test::Fatal;
 use Test::More;
 
 my $tempdir = dir( tempdir( CLEANUP => 1 ) );
-
-{
-    package Test1::Step::CreateA1;
-
-    use Stepford::Types qw( File );
-    use Time::HiRes qw( stat );
-
-    use Moose;
-    with 'Stepford::Role::Step::FileGenerator';
-
-    has a1_file => (
-        traits  => [qw( StepProduction )],
-        is      => 'ro',
-        isa     => File,
-        default => sub { $tempdir->file('a1') },
-    );
-
-    our $RunCount = 0;
-
-    sub run {
-        my $self = shift;
-
-        return if -f $self->a1_file();
-
-        $self->a1_file()->touch();
-    }
-
-    after run => sub { $RunCount++ };
-}
-
-{
-    package Test1::Step::CreateA2;
-
-    use Stepford::Types qw( File );
-
-    use Moose;
-    with 'Stepford::Role::Step::FileGenerator';
-
-    has a2_file => (
-        traits  => [qw( StepProduction )],
-        is      => 'ro',
-        isa     => File,
-        default => sub { $tempdir->file('a2') },
-    );
-
-    our $RunCount = 0;
-
-    sub run {
-        my $self = shift;
-
-        return if -f $self->a2_file();
-
-        $self->a2_file()->touch();
-    }
-
-    after run => sub { $RunCount++ };
-}
-
-{
-    package Test1::Step::UpdateFiles;
-
-    use Stepford::Types qw( File );
-
-    use Moose;
-    with 'Stepford::Role::Step::FileGenerator';
-
-    has a1_file => (
-        traits   => ['StepDependency'],
-        is       => 'ro',
-        isa      => File,
-        required => 1,
-    );
-
-    has a2_file => (
-        traits   => ['StepDependency'],
-        is       => 'ro',
-        isa      => File,
-        required => 1,
-    );
-
-    has a1_file_updated => (
-        traits  => ['StepProduction'],
-        is      => 'ro',
-        isa     => File,
-        default => sub { $tempdir->file('a1-updated') },
-    );
-
-    has a2_file_updated => (
-        traits  => ['StepProduction'],
-        is      => 'ro',
-        isa     => File,
-        default => sub { $tempdir->file('a2-updated') },
-    );
-
-    our $RunCount = 0;
-
-    sub run {
-        my $self = shift;
-
-        $self->_fill_file($_)
-            for $self->a1_file_updated(), $self->a2_file_updated();
-    }
-
-    after run => sub { $RunCount++ };
-
-    sub _fill_file {
-        my $self = shift;
-        my $file = shift;
-
-        $file->spew( $file->basename() . "\n" );
-        return $file;
-    }
-}
-
-{
-    package Test1::Step::CombineFiles;
-
-    use Stepford::Types qw( File );
-
-    use Moose;
-    with 'Stepford::Role::Step::FileGenerator';
-
-    has a1_file_updated => (
-        traits   => ['StepDependency'],
-        is       => 'ro',
-        isa      => File,
-        required => 1,
-    );
-
-    has a2_file_updated => (
-        traits   => ['StepDependency'],
-        is       => 'ro',
-        isa      => File,
-        required => 1,
-    );
-
-    has combined_file => (
-        traits  => ['StepProduction'],
-        is      => 'ro',
-        isa     => File,
-        default => sub { $tempdir->file('combined') },
-    );
-
-    our $RunCount = 0;
-
-    sub run {
-        my $self = shift;
-
-        $self->combined_file()->spew(
-            [
-                map { $_->slurp() } $self->a1_file_updated(),
-                $self->a2_file_updated()
-            ]
-        );
-    }
-
-    after run => sub { $RunCount++ };
-}
 
 {
     my @messages;
@@ -186,9 +29,11 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
         ]
     );
 
+    require Test1::Step::CombineFiles;
+
     my $planner = Stepford::Planner->new(
         step_namespaces => 'Test1::Step',
-        final_step      => 'Test1::Step::CombineFiles',
+        final_steps     => 'Test1::Step::CombineFiles',
         logger          => $logger,
     );
 
@@ -205,7 +50,8 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 
     @messages = ();
 
-    $planner->run();
+    $planner->run( tempdir => $tempdir );
+
     like(
         $messages[0]{message},
         qr/Plan for Test1::Step::CombineFiles/,
@@ -245,7 +91,7 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 
     @messages = ();
 
-    $planner->run();
+    $planner->run( tempdir => $tempdir );
 
     like(
         $messages[-1]{message},
@@ -365,7 +211,7 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 {
     my $planner = Stepford::Planner->new(
         step_namespaces => 'Test2::Step',
-        final_step      => 'Test2::Step::D',
+        final_steps     => 'Test2::Step::D',
     );
 
     _test_plan(
@@ -426,7 +272,7 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
     my $e = exception {
         Stepford::Planner->new(
             step_namespaces => 'Test3::Step',
-            final_step      => 'Test3::Step::B',
+            final_steps     => 'Test3::Step::B',
         );
     };
 
@@ -461,7 +307,7 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
     my $e = exception {
         Stepford::Planner->new(
             step_namespaces => 'Test4::Step',
-            final_step      => 'Test4::Step::A',
+            final_steps     => 'Test4::Step::A',
         );
     };
 
@@ -494,7 +340,7 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
     my $e = exception {
         Stepford::Planner->new(
             step_namespaces => 'Test5::Step',
-            final_step      => 'Test5::Step::A',
+            final_steps     => 'Test5::Step::A',
         );
     };
 
@@ -538,7 +384,7 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 {
     my $planner = Stepford::Planner->new(
         step_namespaces => 'Test6::Step',
-        final_step      => 'Test6::Step::A2',
+        final_steps     => 'Test6::Step::A2',
     );
 
     is(
@@ -578,7 +424,7 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 {
     my $planner = Stepford::Planner->new(
         step_namespaces => 'Test7::Step',
-        final_step      => 'Test7::Step::A',
+        final_steps     => 'Test7::Step::A',
     );
 
     $planner->run(
@@ -590,6 +436,171 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
         scalar $tempdir->file('test7-step-a')->slurp(),
         'new content',
         'values passed to $planner->run() are passed to step constructor'
+    );
+}
+
+{
+    package Test8::Step::ForShared::A;
+
+    use Moose;
+    with 'Stepford::Role::Step';
+
+    has for_shared_a => (
+        traits => ['StepProduction'],
+        is     => 'ro',
+    );
+
+    sub run           { }
+    sub last_run_time { }
+}
+
+{
+    package Test8::Step::ForShared::B;
+
+    use Moose;
+    with 'Stepford::Role::Step';
+
+    has for_shared_b => (
+        traits => ['StepProduction'],
+        is     => 'ro',
+    );
+
+    sub run           { }
+    sub last_run_time { }
+}
+
+{
+    package Test8::Step::Shared;
+
+    use Moose;
+    with 'Stepford::Role::Step';
+
+    has for_shared_a => (
+        traits => ['StepDependency'],
+        is     => 'ro',
+    );
+
+    has for_shared_b => (
+        traits => ['StepDependency'],
+        is     => 'ro',
+    );
+
+    has shared => (
+        traits => ['StepProduction'],
+        is     => 'ro',
+    );
+
+    sub run           { }
+    sub last_run_time { }
+}
+
+{
+    package Test8::Step::ForFinal1::A;
+
+    use Moose;
+    with 'Stepford::Role::Step';
+
+    has shared => (
+        traits => ['StepDependency'],
+        is     => 'ro',
+    );
+
+    has for_final1_a => (
+        traits => ['StepProduction'],
+        is     => 'ro',
+    );
+
+    sub run           { }
+    sub last_run_time { }
+}
+
+{
+    package Test8::Step::ForFinal2::A;
+
+    use Moose;
+    with 'Stepford::Role::Step';
+
+    has shared => (
+        traits => ['StepDependency'],
+        is     => 'ro',
+    );
+
+    has for_final2_a => (
+        traits => ['StepProduction'],
+        is     => 'ro',
+    );
+
+    sub run           { }
+    sub last_run_time { }
+}
+
+{
+    package Test8::Step::ForFinal2::B;
+
+    use Moose;
+    with 'Stepford::Role::Step';
+
+    has for_final2_a => (
+        traits => ['StepDependency'],
+        is     => 'ro',
+    );
+
+    has for_final2_b => (
+        traits => ['StepProduction'],
+        is     => 'ro',
+    );
+
+    sub run           { }
+    sub last_run_time { }
+}
+
+{
+    package Test8::Step::Final1;
+
+    use Moose;
+    with 'Stepford::Role::Step';
+
+    has for_final1_a => (
+        traits => ['StepDependency'],
+        is     => 'ro',
+    );
+
+    sub run           { }
+    sub last_run_time { }
+}
+
+{
+    package Test8::Step::Final2;
+
+    use Moose;
+    with 'Stepford::Role::Step';
+
+    has for_final2_b => (
+        traits => ['StepDependency'],
+        is     => 'ro',
+    );
+
+    sub run           { }
+    sub last_run_time { }
+}
+
+{
+    my $planner = Stepford::Planner->new(
+        step_namespaces => 'Test8::Step',
+        final_steps     => [ 'Test8::Step::Final1', 'Test8::Step::Final2' ],
+    );
+
+    _test_plan(
+        $planner,
+        'Test8::Step',
+        [
+            [ 'ForShared::A', 'ForShared::B' ],
+            ['Shared'],
+            [ 'ForFinal1::A', 'ForFinal2::A' ],
+            [ 'Final1',       'ForFinal2::B' ],
+            ['Final2'],
+        ],
+        'planner comes up with an optimized plan for multiple final steps'
     );
 }
 
@@ -607,9 +618,26 @@ sub _test_plan {
         } @{$expect}
     ];
 
-    is_deeply(
-        [ $planner->_plan_for_final_step() ],
-        $expect,
+    my $got = $planner->_make_plan()->_step_sets();
+
+    my $got_str    = _plan_as_str($got);
+    my $expect_str = _plan_as_str($expect);
+
+    eq_or_diff(
+        $got_str,
+        $expect_str,
         $desc
     );
+}
+
+sub _plan_as_str {
+    my $plan = shift;
+
+    my $str = q{};
+    for my $set ( @{$plan} ) {
+        $str .= join ' - ', @{$set};
+        $str .= "\n";
+    }
+
+    return $str;
 }
