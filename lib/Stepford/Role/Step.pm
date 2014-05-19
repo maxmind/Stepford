@@ -93,6 +93,10 @@ given the C<StepProduction> trait. This can be an empty list.
 
 Returns true if the step has a production of the given name.
 
+=head2 $step->productions_as_hash()
+
+Returns all production values as a hash.
+
 =head2 $step->production_value($name)
 
 This method returns the value of the given production for the object it is
