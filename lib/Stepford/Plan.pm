@@ -59,7 +59,7 @@ sub _build_step_sets {
     return \@plan;
 }
 
-# We start by figuring out all the steps we need to get to our final
+# We start by figuring out all the steps that must run, including our final
 # steps. The easiest way to do this is to start at our (fake) final step and
 # look at that final steps predecessors in the graph. We then repeat that
 # recursively for each predecessor until we run out of steps.
