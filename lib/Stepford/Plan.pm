@@ -137,3 +137,17 @@ sub _step_sets_as_string {
 __PACKAGE__->meta()->make_immutable();
 
 1;
+
+# ABSTRACT: Represents a concrete plan for execution by a Stepford::Planner
+
+__END__
+
+=pod
+
+=for Pod::Coverage next_step_set
+
+=head1 DESCRIPTION
+
+This class has no user-facing parts.
+
+=cut
