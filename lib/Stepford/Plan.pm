@@ -102,10 +102,18 @@ sub _step_sets_for {
 
                 if ( all { $planned{$_} }
                     $self->_graph()->predecessors($dependency) ) {
-                    $planned{$dependency} = 1;
+
                     push @next_set, $dependency;
                 }
             }
+
+            # This has to come after we've looked at all the dependencies. See
+            # the Test2 steps in Planner.t for an example of why. D depends on
+            # B & C, and C _also_ depends on B. If we mark steps in %planned
+            # as we add them to @next_set then we may add C to @next_set, then
+            # look at D, see that both B & C are planned, and then add D to
+            # the set with C.
+            $planned{$_} = 1 for @next_set;
         }
     }
 
