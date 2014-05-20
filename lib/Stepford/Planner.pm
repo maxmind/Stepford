@@ -53,6 +53,16 @@ has _step_classes => (
     builder  => '_build_step_classes',
 );
 
+# We want to preload all the step classes so that the final_steps passed to
+# run() are recognized as valid classes.
+sub BUILD {
+    my $self = shift;
+
+    $self->_step_classes();
+
+    return;
+}
+
 sub run {
     my $self = shift;
     my ( $final_steps, $config ) = validated_list(
@@ -386,8 +396,8 @@ throw a L<Stepford::Error> exception if it finds one.
 This argument is required.
 
 This can either be a string or an array reference of strings. Each string
-should be a step's class name. These classes must already be loaded and they
-must do the L<Stepford::Role::Step> role.
+should be a step's class name. These classes must do the
+L<Stepford::Role::Step> role.
 
 These are the final steps run when the C<< $planner->run() >> method is
 called.
