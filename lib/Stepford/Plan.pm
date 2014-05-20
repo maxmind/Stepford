@@ -70,7 +70,7 @@ sub _build_step_sets {
             }
         );
 
-        push @sets, [ uniq map { $_->node() } @leaves ];
+        push @sets, [ sort uniq map { $_->node() } @leaves ];
 
         for my $leaf (@leaves) {
             my $parent = $leaf->parent();
