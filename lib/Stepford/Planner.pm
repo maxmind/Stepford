@@ -53,17 +53,6 @@ has _step_classes => (
     builder  => '_build_step_classes',
 );
 
-override BUILDARGS => sub {
-    my $class = shift;
-
-    my $p = super();
-
-    $p->{final_steps} = delete $p->{final_step}
-        if exists $p->{final_step};
-
-    return $p;
-};
-
 sub run {
     my $self = shift;
     my ( $final_steps, $config ) = validated_list(
