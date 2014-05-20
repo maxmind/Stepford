@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-use Graph::Directed;
 use List::AllUtils qw( first max );
 use Module::Pluggable::Object;
 use Module::Runtime qw( use_module );
@@ -33,13 +32,6 @@ has _step_namespaces => (
     },
 );
 
-has final_steps => (
-    is       => 'ro',
-    isa      => ArrayOfSteps,
-    coerce   => 1,
-    required => 1,
-);
-
 has logger => (
     is      => 'ro',
     isa     => Logger,
@@ -54,34 +46,12 @@ has jobs => (
 );
 
 has _step_classes => (
-    traits   => ['Array'],
-    is       => 'bare',
+    is       => 'ro',
     isa      => ArrayOfSteps,
     init_arg => undef,
     lazy     => 1,
     builder  => '_build_step_classes',
-    handles  => {
-        _step_classes => 'elements',
-    },
 );
-
-has _production_map => (
-    is       => 'ro',
-    isa      => HashRef [Step],
-    init_arg => undef,
-    lazy     => 1,
-    builder  => '_build_production_map',
-);
-
-has _graph => (
-    is       => 'ro',
-    isa      => 'Graph::Directed',
-    init_arg => undef,
-    lazy     => 1,
-    builder  => '_build_graph',
-);
-
-my $FakeFinalStep = '__fake final step__';
 
 override BUILDARGS => sub {
     my $class = shift;
@@ -94,34 +64,68 @@ override BUILDARGS => sub {
     return $p;
 };
 
-sub BUILD {
+sub run {
     my $self = shift;
+    my ( $final_steps, $config ) = validated_list(
+        \@_,
+        final_steps => {
+            isa    => ArrayOfSteps,
+            coerce => 1,
+        },
+        config => {
+            isa     => HashRef,
+            default => {},
+        },
+    );
 
-    # We force the graph to be built now so we can detect cyclic dependencies
-    # when the planner is constructed, rather than when run() is called.
-    $self->_graph();
+    my $plan = $self->_make_plan($final_steps);
+
+    if ( $self->jobs() > 1 ) {
+        $self->_run_parallel( $plan, $config );
+    }
+    else {
+        $self->_run_sequential( $plan, $config );
+    }
 
     return;
 }
 
-sub run {
-    my $self = shift;
+sub _run_sequential {
+    my $self   = shift;
+    my $plan   = shift;
+    my $config = shift;
 
-    if ( $self->jobs() > 1 ) {
-        $self->_run_parallel(@_);
-    }
-    else {
-        $self->_run_sequential(@_);
-    }
+    my %productions;
+    my @previous_steps_run_times;
+    my @current_steps_run_times;
 
-    return;
+    for my $set ( $plan->step_sets() ) {
+        @previous_steps_run_times = @current_steps_run_times;
+        @current_steps_run_times  = ();
+
+        for my $class (@{$set}) {
+            my $step
+                = $self->_make_step_object( $class, \%productions, $config );
+
+            $step->run()
+                unless $self->_step_is_up_to_date(
+                $step,
+                \@previous_steps_run_times
+                );
+
+            push @current_steps_run_times, $step->last_run_time();
+            %productions = (
+                %productions,
+                $step->productions_as_hash(),
+            );
+        }
+    }
 }
 
 sub _run_parallel {
     my $self   = shift;
-    my %config = @_;
-
-    my $plan = $self->_make_plan();
+    my $plan   = shift;
+    my $config = shift;
 
     my $pm = Parallel::ForkManager->new( $self->jobs() );
 
@@ -129,7 +133,7 @@ sub _run_parallel {
     my @previous_steps_run_times;
     my @current_steps_run_times;
 
-    while ( my $set = $plan->next_step_set() ) {
+    for my $set ( $plan->step_sets() ) {
         @previous_steps_run_times = @current_steps_run_times;
         @current_steps_run_times  = ();
 
@@ -151,9 +155,9 @@ sub _run_parallel {
             }
         );
 
-        for my $class ( @{$set} ) {
+        for my $class (@{$set}) {
             my $step
-                = $self->_make_step_object( $class, \%productions, \%config );
+                = $self->_make_step_object( $class, \%productions, $config );
 
             if (
                 $self->_step_is_up_to_date(
@@ -190,46 +194,14 @@ sub _run_parallel {
     }
 }
 
-sub _run_sequential {
-    my $self   = shift;
-    my %config = @_;
-
-    my $plan = $self->_make_plan();
-
-    my %productions;
-    my @previous_steps_run_times;
-    my @current_steps_run_times;
-
-    while ( my $set = $plan->next_step_set() ) {
-        @previous_steps_run_times = @current_steps_run_times;
-        @current_steps_run_times  = ();
-
-        for my $class ( @{$set} ) {
-            my $step
-                = $self->_make_step_object( $class, \%productions, \%config );
-
-            $step->run()
-                unless $self->_step_is_up_to_date(
-                $step,
-                \@previous_steps_run_times
-                );
-
-            push @current_steps_run_times, $step->last_run_time();
-            %productions = (
-                %productions,
-                $step->productions_as_hash(),
-            );
-        }
-    }
-}
-
 sub _make_plan {
-    my $self = shift;
+    my $self        = shift;
+    my $final_steps = shift;
 
     return Stepford::Plan->new(
-        graph       => $self->_graph(),
-        final_steps => $self->final_steps(),
-        logger      => $self->logger(),
+        step_classes => $self->_step_classes(),
+        final_steps  => $final_steps,
+        logger       => $self->logger(),
     );
 }
 
@@ -268,11 +240,10 @@ sub _constructor_args_for_class {
 
     for my $dep ( map { $_->name() } $class->dependencies() ) {
 
-        # XXX - I'm not sure this error is reachable. We already check
-        # that a class's declared dependencies can be satisfied while
-        # building the graph. That said, it doesn't hurt to leave this
-        # check in here, and it might help illuminate bugs in the
-        # Planner itself.
+        # XXX - I'm not sure this error is reachable. We already check that a
+        # class's declared dependencies can be satisfied while building the
+        # tree. That said, it doesn't hurt to leave this check in here, and it
+        # might help illuminate bugs in the Planner itself.
         Stepford::Error->throw(
             "Cannot construct a $class object. We are missing a required production: $dep"
         ) unless exists $productions->{$dep};
@@ -309,45 +280,6 @@ sub _step_is_up_to_date {
     }
 
     return 0;
-}
-
-sub _build_graph {
-    my $self = shift;
-
-    my $graph = Graph::Directed->new();
-
-    my $map = $self->_production_map();
-
-    my @steps = @{ $self->final_steps() };
-
-    $graph->add_edge( $_ => $FakeFinalStep ) for @steps;
-
-    while ( my $step = shift @steps ) {
-        for my $dep ( map { $_->name() } $step->dependencies() ) {
-            if ( exists $map->{$dep} ) {
-                Stepford::Error->throw(
-                    "A dependency ($dep) for $step resolved to the same step."
-                ) if $map->{$dep} eq $step;
-
-                push @steps, $map->{$dep};
-                $graph->add_edge( $map->{$dep} => $step );
-
-                Stepford::Error->throw(
-                    "The set of dependencies for $step is cyclical")
-                    if $graph->is_cyclic();
-            }
-            else {
-                Stepford::Error->throw(
-                          "Cannot resolve a dependency for $step."
-                        . " There is no step that produces the $dep attribute."
-                );
-            }
-        }
-    }
-
-    $self->logger()->debug("Graph is $graph");
-
-    return $graph;
 }
 
 sub _build_step_classes {
@@ -390,21 +322,6 @@ sub _step_class_sorter {
 
         return ( $order{$a_prefix} <=> $order{$b_prefix} or $a cmp $b );
     };
-}
-
-sub _build_production_map {
-    my $self = shift;
-
-    my %map;
-    for my $class ( $self->_step_classes() ) {
-        for my $attr ( map { $_->name() } $class->productions() ) {
-            next if exists $map{$attr};
-
-            $map{$attr} = $class;
-        }
-    }
-
-    return \%map;
 }
 
 sub _build_logger {
