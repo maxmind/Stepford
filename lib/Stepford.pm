@@ -48,11 +48,12 @@ __END__
     use My::Step::MakeSomething;
     use Stepford::Planner;
 
-    # Runs all the steps needed to get to the $final_step.
+    # Runs all the steps needed to get to the final_steps.
     Stepford::Scheduler->new(
         step_namespaces => 'My::Step',
-        final_step      => 'My::Step::MakeSomething',
-    )->run();
+        )->run(
+        final_steps => 'My::Step::MakeSomething',
+        );
 
 =head1 DESCRIPTION
 
@@ -73,7 +74,7 @@ C<StepDependency> or C<StepProduction> trait as appropriate.
 
 The L<Stepford::Planner> class analyzes the dependencies and productions for
 each step to figure out what steps it needs to run in order to satisfy the
-dependencies of the final step you specify.
+dependencies of the final steps you specify.
 
 Each step can specify a C<last_run_time()> method (or get one from the
 L<StepFord::Role::Step::FileGenerator> role). The planner uses this to skip
@@ -99,7 +100,9 @@ logic between classes.
 
 Each step must declare its dependencies and/or productions as regular Moose
 attributes. These attributes can contain any type of value. They are simply
-data.
+data. Note, however, that if you want to run steps in parallel, then the
+dependencies (and therefore productions) must be serializable data types (so
+no L<DBI> handles, etc.).
 
 A dependency is simply a value that a given step expects to get from another
 step (they can also be supplied to the planner manully).
@@ -108,8 +111,8 @@ The flip side of a dependency is a production. This is a value that the step
 will generate as needed.
 
 Steps are run by a L<Stepford::Planner> object. To create this object, you
-give it a list of step namespaces and the class of the final step you want to
-run. The planner looks at the final step's dependencies and uses this
+give it a list of step namespaces and the class(es) of the final step(s) you
+want to run. The planner looks at the final steps' dependencies and uses this
 information to figure out what other steps to run. It looks for steps with
 productions that satisfy these dependencies and adds any matching steps to the
 execution plan. It does this iteratively for each step it adds to the plan
@@ -146,11 +149,6 @@ There are several very obvious things that should be added to this framework:
 =over 4
 
 =item * Dry runs
-
-=item * Parallel running
-
-Since the planner know what steps depend on what other steps, it can also
-figure out when things can be run in parallel.
 
 =back
 
