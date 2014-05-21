@@ -3,7 +3,7 @@ NAME
     and let a planner run them
 
 VERSION
-    version 0.002000
+    version 0.002001
 
 SYNOPSIS
         package My::Step::MakeSomething;
@@ -40,15 +40,18 @@ SYNOPSIS
 
         package My::Runner;
 
-        use My::Step::MakeSomething;
         use Stepford::Planner;
 
-        # Runs all the steps needed to get to the final_steps.
-        Stepford::Scheduler->new(
+        my $planner = Stepford::Planner->new(
             step_namespaces => 'My::Step',
-            )->run(
+            logger          => $log_dispatch_object,    # optional
+            jobs            => 4,                       # optional
+        );
+
+        # Runs all the steps needed to get to the final_steps.
+        $planner->run(
             final_steps => 'My::Step::MakeSomething',
-            );
+        );
 
 DESCRIPTION
     NOTE: This is alpha code. You have been warned!

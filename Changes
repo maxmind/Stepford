@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.002001 2014-05-21
+
 - Fixed an incorrect example in the Stepford::Planner SYNOPSIS and improved
   the larger example in the Stepford.pm SYNOPSIS.
 
