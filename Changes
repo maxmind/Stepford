@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+- Fixed an incorrect example in the Stepford::Planner SYNOPSIS and improved
+  the larger example in the Stepford.pm SYNOPSIS.
+
+
 0.002000 2014-05-21
 
 * Breaking API changes. Final step(s) are now passed to the $planner->run()
