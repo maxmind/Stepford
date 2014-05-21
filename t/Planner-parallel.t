@@ -15,11 +15,15 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 {
     my $planner = Stepford::Planner->new(
         step_namespaces => 'Test1::Step',
-        final_steps     => 'Test1::Step::CombineFiles',
         jobs            => 3,
     );
 
-    $planner->run( tempdir => $tempdir );
+    $planner->run(
+        final_steps => 'Test1::Step::CombineFiles',
+        config      => {
+            tempdir => $tempdir,
+        },
+    );
 
     for my $file ( map { $tempdir->file($_) } qw( a1 a2 combined ) ) {
         ok( -f $file, $file->basename() . ' file exists' );
