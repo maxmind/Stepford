@@ -1,5 +1,22 @@
 {{$NEXT}}
 
+* Breaking API changes. Final step(s) are now passed to the $planner->run()
+  method rather than the Stepford::Planner constructor.
+
+- Implemented the ability to specify multiple final steps for a run.
+
+- Implemented parallel running.
+
+- All runs now end with a new step, Stepford::FinalStep. This just logs a
+  message saying that the run is complete.
+
+- Plans are now optimized so steps run as early as possible in the plan. This
+  helps improve parallelism and is just more generally correct. Thanks to Ran
+  Eilam for pointing me at a blog post
+  (blog.codeaholics.org/parallel-ant/#how-it-works) that described a very
+  simple algorithm to do this.
+
+
 0.001002 2014-04-22
 
 - Require Time::HiRes 1.9726. Some earlier versions broke constructs like
