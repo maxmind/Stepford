@@ -346,11 +346,17 @@ __END__
 
     use Stepford::Planner;
 
-    Stepford::Planner->new(
+    my $planner = Stepford::Planner->new(
         step_namespaces => 'My::Step',
-        final_steps =>
-            [ 'My::Step::MakeSomething', 'My::Step::MakeSomethingElse' ],
-    )->run();
+    );
+
+    $planner->run(
+        final_steps => [
+            'My::Step::DeployCatDatabase',
+            'My::Step::DeployDogDatabase',
+        ],
+        config => {...},
+    );
 
 =head1 DESCRIPTION
 
