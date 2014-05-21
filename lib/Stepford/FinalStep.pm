@@ -25,3 +25,16 @@ sub run {
 __PACKAGE__->meta()->make_immutable();
 
 1;
+
+# ABSTRACT: The final step for all Stepford runs
+
+__END__
+
+=pod
+
+=for Pod::Coverage .*
+
+=head1 DESCRIPTION
+
+This step just logs the message "Completed execution". It is always run as the
+last step when calling C<run()> on a L<Stepford::Planner> object.
