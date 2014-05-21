@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.002000 2014-05-21
+
 * Breaking API changes. Final step(s) are now passed to the $planner->run()
   method rather than the Stepford::Planner constructor.
 
