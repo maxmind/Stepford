@@ -45,15 +45,18 @@ __END__
 
     package My::Runner;
 
-    use My::Step::MakeSomething;
     use Stepford::Planner;
 
-    # Runs all the steps needed to get to the final_steps.
-    Stepford::Scheduler->new(
+    my $planner = Stepford::Planner->new(
         step_namespaces => 'My::Step',
-        )->run(
+        logger          => $log_dispatch_object,    # optional
+        jobs            => 4,                       # optional
+    );
+
+    # Runs all the steps needed to get to the final_steps.
+    $planner->run(
         final_steps => 'My::Step::MakeSomething',
-        );
+    );
 
 =head1 DESCRIPTION
 
