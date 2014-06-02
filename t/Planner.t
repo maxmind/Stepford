@@ -615,6 +615,36 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
     );
 }
 
+{
+    package Test9::Step::A;
+
+    use Moose;
+
+    has thing_a => (
+        traits => [qw( StepDependency StepProduction )],
+        is     => 'ro',
+    );
+
+    sub run           { }
+    sub last_run_time { }
+}
+
+{
+    my $e = exception {
+        Stepford::Planner->new(
+            step_namespaces => 'Test9::Step',
+            )->run(
+            final_steps => 'Test9::Step::A',
+            );
+    };
+
+    like(
+        $e,
+        qr/\QFound a class which doesn't do the Stepford::Role::Step role: Test9::Step::A/,
+        'cannot have an attribute that is both a dependency and production'
+    );
+}
+
 done_testing();
 
 sub _test_plan {
