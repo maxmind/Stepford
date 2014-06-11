@@ -468,10 +468,6 @@ doing a lot of work in your constructor. Save that for the C<run()> method.
 This method returns the step namespaces passed to the constructor as a list
 (not an arrayref).
 
-=head2 $planner->final_steps()
-
-This method returns the C<final_steps> argument passed to the constructor.
-
 =head2 $planner->logger()
 
 This method returns the C<logger> used by the planner, either what you passed
