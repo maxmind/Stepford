@@ -3,7 +3,7 @@ NAME
     and let a planner run them
 
 VERSION
-    version 0.002002
+    version 0.002003
 
 SYNOPSIS
         package My::Step::MakeSomething;

@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.002003 2014-06-19
+
 - Added debug level logging that explains how each dependency for each class
   is resolved.
 
