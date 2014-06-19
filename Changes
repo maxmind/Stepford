@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+- Added debug level logging that explains how each dependency for each class
+  is resolved.
+
+
 0.002002 2014-06-02
 
 - The Stepford::Planner object now throws an error if it finds a class in any

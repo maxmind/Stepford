@@ -128,6 +128,10 @@ sub _add_steps_to_tree {
                 "A dependency ($dep) for $step resolved to the same step.")
                 if $map->{$dep} eq $step;
 
+            $self->logger()
+                ->debug(
+                "Dependency $dep for $step is provided by $map->{$dep}");
+
             $deps{ $map->{$dep} } = 1;
         }
 

@@ -4,6 +4,7 @@ use warnings;
 use lib 't/lib';
 
 use File::Temp qw( tempdir );
+use List::AllUtils qw( first );
 use Log::Dispatch;
 use Log::Dispatch::Array;
 use Path::Class qw( dir );
@@ -55,14 +56,26 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
         config      => { tempdir => $tempdir },
     );
 
+    my @dep_messages = grep {
+               $_->{level} eq 'debug'
+            && $_->{message} =~ /^Dependency \w+ for/
+    } @messages;
+
+    is(
+        scalar @dep_messages,
+        4,
+        'logged four dependency resolution messages'
+    );
+
+    my $plan_message = first { $_->{level} eq 'info' } @messages;
     like(
-        $messages[0]{message},
+        $plan_message->{message},
         qr/Plan for Test1::Step::CombineFiles/,
         'logged plan when ->run() was called'
     );
 
     like(
-        $messages[0]{message},
+        $plan_message->{message},
         qr/
               \Q[ Test1::Step::CreateA1, Test1::Step::CreateA2 ] => \E
               \Q[ Test1::Step::UpdateFiles ] => [ Test1::Step::CombineFiles ]\E
@@ -71,19 +84,28 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
     );
 
     is(
-        $messages[0]{level},
+        $plan_message->{level},
         'info',
         'log level for plan description is info'
     );
 
+    my @object_constructor_messages
+        = grep { $_->{level} eq 'debug' && $_->{message} =~ /\Q->new()/ }
+        @messages;
     is(
-        $messages[1]{message},
+        scalar @object_constructor_messages,
+        5,
+        'logged five object construction messages'
+    );
+
+    is(
+       $object_constructor_messages[0]{message},
         'Test1::Step::CreateA1->new()',
         'logged a message indicating that a step was being created'
     );
 
     is(
-        $messages[1]{level},
+       $object_constructor_messages[0]{level},
         'debug',
         'log level for object creation is debug'
     );
