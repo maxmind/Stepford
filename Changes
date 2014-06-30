@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.002004 2014-06-30
+
 - Fixed the Stepford::Planner docs. The docs said that the constructor
   accepted a final_steps method, and did not document the parameter passed to
   the run() method properly. Bug report by Olaf Alders. GH #5.
