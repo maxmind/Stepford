@@ -411,17 +411,6 @@ consume the L<Stepford::Role::Step> role.
 This means you can have utility packages and roles in a step namespace, but
 not Moose objects which aren't steps.
 
-=item * final_steps
-
-This argument is required.
-
-This can either be a string or an array reference of strings. Each string
-should be a step's class name. These classes must do the
-L<Stepford::Role::Step> role.
-
-These are the final steps run when the C<< $planner->run() >> method is
-called.
-
 =item * jobs
 
 This argument default to 1.
@@ -452,8 +441,7 @@ load L<Log::Dispatch> into memory.
 =head2 $planner->run()
 
 When this method is called, the planner comes up with a plan of the steps
-needed to get to the final steps given to the constructor and runs them in
-order.
+needed to get to the requested final steps.
 
 For each step, the planner checks if it is up to date compared to its
 dependencies (as determined by the C<< $step->last_run_time() >> method. If
@@ -462,6 +450,34 @@ $step->run() >> on the step.
 
 Note that the step objects are always I<constructed>, so you should avoid
 doing a lot of work in your constructor. Save that for the C<run()> method.
+
+This method accepts the following parameters:
+
+=over 4
+
+=item * final_steps
+
+This argument is required.
+
+This can either be a string or an array reference of strings. Each string
+should be a step's class name. These classes must do the
+L<Stepford::Role::Step> role.
+
+These are the final steps run when the C<< $planner->run() >> method is
+called.
+
+=item * config
+
+This is an optional hash reference. For each step constructed, the planner
+looks at the attributes that the step accepts. If they match any of the keys
+in this hash reference, the key/value pair from this hash reference will be
+passed to the step constructor. This matching is done based on attribute
+C<init_arg> values.
+
+Note that values generated as productions from previous steps will override
+the corresponding key in the config hash reference.
+
+=back
 
 =head2 $planner->step_namespaces()
 

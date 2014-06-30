@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+- Fixed the Stepford::Planner docs. The docs said that the constructor
+  accepted a final_steps method, and did not document the parameter passed to
+  the run() method properly. Bug report by Olaf Alders. GH #5.
+
+
 0.002003 2014-06-19
 
 - Added debug level logging that explains how each dependency for each class
