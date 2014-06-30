@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.002005 2014-06-30
+
 - More doc fixes for Stepford::Planner. The docs on when we do error checks
   and what type of errors are checked for were out of date.
 
