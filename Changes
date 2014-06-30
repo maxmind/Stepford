@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+- More doc fixes.
+
+
 0.002004 2014-06-30
 
 - Fixed the Stepford::Planner docs. The docs said that the constructor

@@ -400,9 +400,6 @@ class names based on the order of the namespaces provided to the constructor,
 and then the full name of the class. You can take advantage of this feature to
 provide different steps in a different environments (for example, for testing).
 
-The constructor checks for circular dependencies among the steps and will
-throw a L<Stepford::Error> exception if it finds one.
-
 The planner object assumes that every B<class> it finds in a step namespace is
 a step. Specifically, if it finds a package that is a subclass of
 L<Moose::Object>, then it throws an error if that package does not also
@@ -442,6 +439,11 @@ load L<Log::Dispatch> into memory.
 
 When this method is called, the planner comes up with a plan of the steps
 needed to get to the requested final steps.
+
+When this method is called, we check for circular dependencies among the steps
+and will throw a L<Stepford::Error> exception if it finds one. We also check
+for unsatisfied dependencies for steps in the plan. Finally, we check to make
+sure that no step provides its own dependencies as productions.
 
 For each step, the planner checks if it is up to date compared to its
 dependencies (as determined by the C<< $step->last_run_time() >> method. If
