@@ -6,7 +6,6 @@ use namespace::autoclean;
 
 use List::AllUtils qw( first max );
 use Module::Pluggable::Object;
-use Module::Runtime qw( use_module );
 use MooseX::Params::Validate qw( validated_list );
 use Parallel::ForkManager;
 use Scalar::Util qw( blessed );
@@ -292,11 +291,10 @@ sub _build_step_classes {
 
     for my $class (
         sort { $sorter->() } Module::Pluggable::Object->new(
-            search_path => [ $self->step_namespaces() ]
+            search_path => [ $self->step_namespaces() ],
+            require     => 1,
         )->plugins()
         ) {
-
-        use_module($class) unless $class->can('run');
 
         # We need to skip roles
         next unless $class->isa('Moose::Object');
