@@ -16,7 +16,7 @@ use Test::More;
 my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 
 {
-    
+
     # adding the step group namespace will load any nested step classes
     my $planner = Stepford::Planner->new(
         step_namespaces => [
