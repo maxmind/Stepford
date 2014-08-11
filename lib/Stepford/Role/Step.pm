@@ -5,6 +5,7 @@ use warnings;
 use namespace::autoclean;
 
 use List::AllUtils qw( any );
+use Stepford::StepLogger;
 use Stepford::Trait::StepDependency;
 use Stepford::Trait::StepProduction;
 use Stepford::Types qw( ArrayOfDependencies Logger Maybe PositiveNum Str );
@@ -19,6 +20,19 @@ has logger => (
     required => 1,
 );
 
+around BUILDARGS => sub {
+    my $orig  = shift;
+    my $class = shift;
+    my %args = @_ == 1 && ref $_[0] ? %{ $_[0]} : @_;
+
+    $args{logger} = Stepford::StepLogger->new(
+        logger => $args{logger},
+        class  => $class
+    );
+
+    $class->$orig(%args);
+};
+
 # Some of these should be moved into a metaclass extension
 sub productions {
     my $class = shift;
@@ -30,7 +44,7 @@ sub productions {
 
 sub has_production {
     my $class = shift;
-    my $name = shift;
+    my $name  = shift;
 
     return any { $_->name() eq $name } $class->productions();
 }
