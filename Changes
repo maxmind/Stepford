@@ -4,6 +4,10 @@
   class moniker to each log message. This makes following the logs for a
   parallel run much easier.
 
+- The planner object now recognizes inner classes created by any files that it
+  loads. This means you can create step classes on the fly and the planner
+  will recognize them as being valid.
+
 
 0.002005 2014-06-30
 
