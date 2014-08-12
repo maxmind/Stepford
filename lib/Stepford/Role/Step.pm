@@ -5,6 +5,7 @@ use warnings;
 use namespace::autoclean;
 
 use List::AllUtils qw( any );
+use Stepford::LoggerWithMoniker;
 use Stepford::Trait::StepDependency;
 use Stepford::Trait::StepProduction;
 use Stepford::Types qw( ArrayOfDependencies Logger Maybe PositiveNum Str );
@@ -19,6 +20,27 @@ has logger => (
     required => 1,
 );
 
+around BUILDARGS => sub {
+    my $orig  = shift;
+    my $class = shift;
+
+    my $args = $class->$orig(@_);
+
+    if ( $args->{logger} ) {
+        $args->{logger} = Stepford::LoggerWithMoniker->new(
+            logger  => $args->{logger},
+            moniker => $class->_log_moniker(),
+        );
+    }
+
+    return $args;
+};
+
+sub _log_moniker {
+    my $class = shift;
+    return $class;
+}
+
 # Some of these should be moved into a metaclass extension
 sub productions {
     my $class = shift;
@@ -30,7 +52,7 @@ sub productions {
 
 sub has_production {
     my $class = shift;
-    my $name = shift;
+    my $name  = shift;
 
     return any { $_->name() eq $name } $class->productions();
 }
@@ -80,6 +102,10 @@ This role provides one attribute:
 This attribute is required for all roles. It will be provided to your step
 classes by the L<Stepford::Planner> object.
 
+The Step object will wrap the logger with an object that prepends prepends
+C<[$log_moniker] > to each log message. The moniker is determined by calling
+C<< $class->_log_moniker() >> on the class during object construction.
+
 =head1 METHODS
 
 This role provides the following methods:
@@ -124,3 +150,14 @@ It may also do other things such as record the last run time.
 This method must return a timestamp marking the last time the step was
 run. You are encouraged to use L<Time::HiRes> as appropriate to provide hi-res
 timestamps.
+
+=head1 OPTIONAL METHODS
+
+All classes which consume the L<Stepford::Role::Step> role may implement the
+following methods:
+
+=head2 $class->_log_moniker()
+
+This is expected to return a string identifying the class for the purposes of
+logging. The default moniker is the full class name, but you may prefer to
+override this in your step classes with something shorter or more descriptive.
