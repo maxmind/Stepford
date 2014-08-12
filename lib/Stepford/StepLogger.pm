@@ -42,7 +42,12 @@ __PACKAGE__->meta()->make_immutable();
 
 __END__
 
+=pod
+
+=for Pod::Coverage next_step_set
+
 =head1 DESCRIPTION
 
-The class wraps the logger passed in by the Planner. It prefixes the messages
-with the step name.
+This class has no user-facing parts.
+
+=cut
