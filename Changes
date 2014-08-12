@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+- The logger passed to each step class is now wrapped to prepend a per-step
+  class moniker to each log message. This makes following the logs for a
+  parallel run much easier.
+
+
 0.002005 2014-06-30
 
 - More doc fixes for Stepford::Planner. The docs on when we do error checks
