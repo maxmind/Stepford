@@ -49,8 +49,8 @@ __END__
 
     my $planner = Stepford::Planner->new(
         step_namespaces => 'My::Step',
-        logger          => $log_dispatch_object,    # optional
-        jobs            => 4,                       # optional
+        logger          => $log_object,    # optional
+        jobs            => 4,              # optional
     );
 
     # Runs all the steps needed to get to the final_steps.
