@@ -2,14 +2,19 @@ use strict;
 use warnings;
 
 use Log::Dispatch;
+use Log::Dispatch::Array;
 use Log::Dispatch::Null;
 use Time::HiRes qw( stat );
 
 use Test::Fatal;
 use Test::More;
 
-my $logger = Log::Dispatch->new(
-    outputs => [ [ Null => min_level => 'emerg' ] ] );
+my $logger_output = Log::Dispatch::Array->new(min_level => 'debug');
+
+my $logger
+    = Log::Dispatch->new( outputs => [ [ Null => min_level => 'emerg' ] ] );
+
+$logger->add($logger_output);
 
 {
     package Step1;
@@ -87,6 +92,8 @@ is_deeply(
     sub run {
         my $self = shift;
 
+        $self->logger->debug('Touching file');
+
         $self->output_file1()->touch();
         utime 100, 100, $self->output_file1();
 
@@ -111,6 +118,10 @@ is_deeply(
         ( stat $step->output_file2() )[9],
         'last_run_time matches mtime of $step->output_file2'
     );
+
+    my $message = shift @{$logger_output->array};
+    is($message ->{message}, '[FileStep] Touching file', 'expected log message');
+    is($message ->{level}, 'debug', 'expected log level');
 }
 
 {
