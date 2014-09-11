@@ -144,7 +144,7 @@ sub _run_parallel {
                     die "Child process $pid failed";
                 }
                 else {
-                    push @current_steps_run_times, $message->{run_time};
+                    push @current_steps_run_times, $message->{last_run_time};
                     %productions = (
                         %productions,
                         %{ $message->{productions} },
