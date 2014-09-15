@@ -5,8 +5,9 @@ use warnings;
 use namespace::autoclean;
 
 use Carp qw( croak );
-use List::AllUtils qw( max );
+use List::AllUtils qw( any max );
 use Stepford::Types qw( File );
+
 # Sadly, there's no (sane) way to make Path::Class::File use this
 use Time::HiRes 1.9726 qw( stat );
 
@@ -27,7 +28,7 @@ before BUILD => sub {
         . ( ref $self )
         . ' class consumed the Stepford::Role::Step::FileGenerator role but contains'
         . " the following productions which are not files: @not_files"
-            if @not_files;
+        if @not_files;
 
     return;
 };
@@ -35,9 +36,12 @@ before BUILD => sub {
 sub last_run_time {
     my $self = shift;
 
-    my @times = map { ( stat $_ )[9] }
-        grep { -f }
-        map  { $self->${ \( $_->get_read_method() ) } } $self->productions();
+    my @production_files
+        = map { $self->${ \( $_->get_read_method() ) } } $self->productions();
+
+    return undef if any { !-f } @production_files;
+
+    my @times = map { ( stat $_ )[9] } @production_files;
 
     return max @times;
 }
@@ -70,4 +74,5 @@ if I can think of a way to do this sanely.
 =head2 $step->last_run_time()
 
 This returns the most recent file modification time from all of the step's
-productions.
+productions, or C<undef> (requesting an unconditional run) if any productions
+are missing.

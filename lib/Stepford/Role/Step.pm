@@ -151,6 +151,9 @@ This method must return a timestamp marking the last time the step was
 run. You are encouraged to use L<Time::HiRes> as appropriate to provide hi-res
 timestamps.
 
+You can return C<undef> from this method to request an unconditional rebuild
+of this step, regardless of the C<last_run_time()> of previous steps.
+
 =head1 OPTIONAL METHODS
 
 All classes which consume the L<Stepford::Role::Step> role may implement the
