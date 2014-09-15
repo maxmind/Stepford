@@ -5,6 +5,9 @@
   provided by the Stepford::Role::Step::FileGenerator role does this when any
   of the production files are missing. Fixed by Ran Eilam. GH #9.
 
+- When running a parallel plan, steps that should have been rebuilt because of
+  stale files were not being rebuilt properly. Fixed by Ran Eilam. GH #10.
+
 
 0.002006 2014-08-12
 
