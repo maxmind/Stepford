@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.002007 2014-09-30
+
 - FileGenerator steps can now return undef from the last_run_time() method in
   order to indicate that the step must be re-run. The last_run_time() method
   provided by the Stepford::Role::Step::FileGenerator role does this when any
