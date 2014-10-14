@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+- (Some) previous releases were missing a LICENSE file.
+
+
 0.002007 2014-09-30
 
 - FileGenerator steps can now return undef from the last_run_time() method in
