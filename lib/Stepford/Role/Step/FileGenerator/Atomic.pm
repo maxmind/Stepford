@@ -5,32 +5,19 @@ use warnings;
 use namespace::autoclean;
 
 use Carp qw( croak );
-use File::Temp;
-use Path::Class qw( dir );
+use Path::Class qw( tempdir );
 use Stepford::Types qw( File );
 
 use Moose::Role;
 
 with 'Stepford::Role::Step::FileGenerator';
 
-has _temp_dir_handle => (
-    is      => 'ro',
-    isa     => 'File::Temp',
-    default => sub { File::Temp->new },
-    handles => ['newdir'],
-);
-
 has pre_commit_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    builder => '_build_pre_commit_file',
+    default => sub { tempdir()->file('pre-commit') },
 );
-
-sub _build_pre_commit_file {
-    my $self = shift;
-    return dir( $self->newdir )->file('pre-commit');
-}
 
 sub BUILD { }
 before BUILD => sub {
@@ -69,9 +56,9 @@ __END__
 =head1 DESCRIPTION
 
 This role consumes the L<Stepford::Role::Step::FileGenerator> role. It allows
-only one file production, but makes sure it is written atomically- the file
-will not exist if the step aborts. The file will only be committed to its final
-destination when C<run()> completes successfully.
+only one file production, but makes sure it is written atomically - the file
+will not exist if the step aborts. The file will only be committed to its
+final destination when C<run()> completes successfully.
 
 Instead of manipulating the file production directly, you work with the file
 given by C<$step->pre_commit_file()>. This role will make sure it gets
@@ -83,11 +70,11 @@ This role provides the following methods:
 
 =head2 $step->BUILD()
 
-This method adds a wrapper to the BUILD method which checks there is only one
-production.
+This method adds a wrapper to the BUILD method which ensures that there is
+only one production.
 
 =head2 $step->pre_commit_file()
 
 This returns a temporary file in a temporary directory that you can manipulate
-inside C<run()>. It will be removed if the step fails, or committed to the
+inside C<run()>. It will be removed if the step fails, or renamed to the final
 file production if the step succceeds.
