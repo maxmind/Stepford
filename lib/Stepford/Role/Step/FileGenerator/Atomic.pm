@@ -23,11 +23,13 @@ sub BUILD { }
 before BUILD => sub {
     my $self = shift;
 
+    my @production_names = sort map { $_->name() } $self->productions();
+
     croak 'The '
         . ( ref $self )
         . ' class consumed the Stepford::Role::Step::FileGenerator::Atomic'
-        . ' role but contains more than one production'
-        if $self->productions() != 1;
+        . " role but contains more than one production: @production_names"
+        if @production_names > 1;
 
     return;
 };
