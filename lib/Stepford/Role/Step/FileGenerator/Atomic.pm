@@ -39,7 +39,11 @@ after run => sub {
 
     my $pre_commit = $self->pre_commit_file();
 
-    croak "No pre-commit production file found at $pre_commit"
+    croak 'The '
+        . ( ref $self )
+        . ' class consumed the Stepford::Role::Step::FileGenerator::Atomic'
+        . ' role but run() produced no pre-commit production file at:'
+        . " $pre_commit"
         unless -f $pre_commit;
 
     my $read_method = ( $self->productions() )[0]->get_read_method();

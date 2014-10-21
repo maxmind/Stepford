@@ -15,7 +15,8 @@ my $logger =
   Log::Dispatch->new( outputs => [ [ Null => min_level => 'emerg' ] ] );
 
 {
-    package AtomicFileGeneratorTest::BadStep;
+
+    package AtomicFileGeneratorTest::TooManyFilesStep;
 
     use Moose;
     use Stepford::Types qw( File );
@@ -33,21 +34,59 @@ my $logger =
 
 {
     my $e = exception {
-        AtomicFileGeneratorTest::BadStep->new( logger => $logger );
+        AtomicFileGeneratorTest::TooManyFilesStep->new( logger => $logger );
     };
     like(
         $e,
         qr/
-            \QThe AtomicFileGeneratorTest::BadStep class consumed the \E
-            \QStepford::Role::Step::FileGenerator::Atomic role but contains \E
-            \Qmore than one production: a_production another_production\E
+            \QThe AtomicFileGeneratorTest::TooManyFilesStep class consumed \E
+            \Qthe Stepford::Role::Step::FileGenerator::Atomic role but \E
+            \Qcontains more than one production: a_production \E
+            \Qanother_production\E
            /x,
-        'AtomicFileGeneratorTest::BadStep->new() dies because it contains'
+'AtomicFileGeneratorTest::TooManyFilesStep->new() dies because it contains'
           . ' more than one production',
     );
 }
 
 {
+
+    package AtomicFileGeneratorTest::NoWrittenFileStep;
+
+    use Moose;
+    use Path::Class qw( tempdir );
+    use Stepford::Types qw( File );
+
+    with 'Stepford::Role::Step::FileGenerator::Atomic';
+
+    has a_production => (
+        traits  => ['StepProduction'],
+        is      => 'ro',
+        isa     => File,
+        default => sub { $tempdir->file('never_written') },
+    );
+
+    sub run { }
+}
+
+{
+    my $iut =
+      AtomicFileGeneratorTest::NoWrittenFileStep->new( logger => $logger );
+    my $e = exception { $iut->run() };
+    like(
+        $e,
+        qr/
+            \QThe AtomicFileGeneratorTest::NoWrittenFileStep class consumed \E
+            \Qthe Stepford::Role::Step::FileGenerator::Atomic role but \E
+            \Qrun() produced no pre-commit production file at: \E
+           /x,
+        'AtomicFileGeneratorTest::NoWrittenFileStep->run() dies because the'
+          . ' production file was not found after concrete step run()',
+    );
+}
+
+{
+
     package AtomicFileGeneratorTest::TwoLineFileGenerator;
 
     use Moose;
