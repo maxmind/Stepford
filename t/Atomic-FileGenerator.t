@@ -44,8 +44,8 @@ my $logger =
             \Qcontains more than one production: a_production \E
             \Qanother_production\E
            /x,
-'AtomicFileGeneratorTest::TooManyFilesStep->new() dies because it contains'
-          . ' more than one production',
+        'AtomicFileGeneratorTest::TooManyFilesStep->new() dies because it'
+            . ' contains more than one production',
     );
 }
 

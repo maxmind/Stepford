@@ -66,14 +66,13 @@ is_deeply(
 {
     package FileStep;
 
-    use File::Temp qw( tempdir );
-    use Path::Class qw( dir );
+    use Path::Class qw( dir tempdir );
     use Stepford::Types qw( File );
 
     use Moose;
     with 'Stepford::Role::Step::FileGenerator';
 
-    my $tempdir = dir( tempdir( CLEANUP => 1 ) );
+    my $tempdir = tempdir( CLEANUP => 1 );
 
     has output_file1 => (
         traits  => ['StepProduction'],
