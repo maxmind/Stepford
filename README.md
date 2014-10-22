@@ -163,6 +163,12 @@ Please report all issues with this code using the GitHub issue tracker at
 
 Dave Rolsky <drolsky@maxmind.com>
 
+# CONTRIBUTORS
+
+- Greg Oschwald <goschwald@maxmind.com>
+- Olaf Alders <oalders@maxmind.com>
+- Ran Eilam <reilam@maxmind.com>
+
 # COPYRIGHT AND LICENSE
 
 This software is copyright (c) 2014 by MaxMind, Inc..
