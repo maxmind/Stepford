@@ -9,6 +9,9 @@ use warnings;
 
 __END__
 
+=for test_synopsis
+my $log_object;
+
 =head1 SYNOPSIS
 
     package My::Step::MakeSomething;
