@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+- There is now a new Stepford::Role::Step::FileGenerator::Atomic role. This
+  role can be consumed by step classes which want to ensure that single file
+  is generated atomically. Implemented by Ran Eilam. GH #11.
+
+
 0.002008 2014-10-14
 
 - (Some) previous releases were missing a LICENSE file.
