@@ -3,11 +3,10 @@ use warnings;
 
 use lib 't/lib';
 
-use File::Temp qw( tempdir );
 use List::AllUtils qw( first );
 use Log::Dispatch;
 use Log::Dispatch::Array;
-use Path::Class qw( dir );
+use Path::Class qw( dir tempdir );
 use Stepford::Planner;
 use Time::HiRes 1.9726 qw( stat time );
 
@@ -15,7 +14,7 @@ use Test::Differences;
 use Test::Fatal;
 use Test::More;
 
-my $tempdir = dir( tempdir( CLEANUP => 1 ) );
+my $tempdir = tempdir( CLEANUP => 1 );
 
 {
     my @messages;
