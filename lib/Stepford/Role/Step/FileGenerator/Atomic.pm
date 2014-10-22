@@ -5,18 +5,26 @@ use warnings;
 use namespace::autoclean;
 
 use Carp qw( croak );
-use Path::Class qw( tempdir );
+use File::Temp;
+use Path::Class qw( dir );
 use Stepford::Types qw( File );
 
 use Moose::Role;
 
 with 'Stepford::Role::Step::FileGenerator';
 
+has _temp_dir_handle => (
+    is      => 'ro',
+    isa     => 'File::Temp',
+    default => sub { File::Temp->new },
+    handles => ['newdir'],
+);
+
 has pre_commit_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    default => sub { tempdir()->file('pre-commit') },
+    default => sub { dir( shift->newdir() )->file('pre-commit') },
 );
 
 sub BUILD { }
