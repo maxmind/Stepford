@@ -111,7 +111,7 @@ dependencies (and therefore productions) must be serializable data types (so
 no L<DBI> handles, etc.).
 
 A dependency is simply a value that a given step expects to get from another
-step (they can also be supplied to the planner manully).
+step (they can also be supplied to the planner manually).
 
 The flip side of a dependency is a production. This is a value that the step
 will generate as needed.
