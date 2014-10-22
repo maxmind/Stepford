@@ -90,4 +90,4 @@ only one production.
 
 This returns a temporary file in a temporary directory that you can manipulate
 inside C<run()>. It will be removed if the step fails, or renamed to the final
-file production if the step succceeds.
+file production if the step succeeds.
