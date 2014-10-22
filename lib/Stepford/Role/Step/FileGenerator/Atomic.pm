@@ -15,16 +15,15 @@ with 'Stepford::Role::Step::FileGenerator';
 
 has _temp_dir_handle => (
     is      => 'ro',
-    isa     => 'File::Temp',
-    default => sub { File::Temp->new },
-    handles => ['newdir'],
+    isa     => 'File::Temp::Dir',
+    default => sub { File::Temp->new->newdir },
 );
 
 has pre_commit_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    default => sub { dir( shift->newdir() )->file('pre-commit') },
+    default => sub { dir( shift->_temp_dir_handle() )->file('pre-commit') },
 );
 
 sub BUILD { }
