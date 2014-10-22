@@ -122,13 +122,23 @@ my $logger =
         should_die => 0,
         a_file     => $file,
     );
+
+    my $pre_commit_dir = $step_that_lives->pre_commit_file()->parent();
+    ok( -d $pre_commit_dir, 'pre commit dir exists before run() is called' );
+
     $step_that_lives->run();
     is(
         $file->slurp(),
         "line 1\nline 2",
         'file written correctly to final destination when run() not'
-          . ' interrupted',
+            . ' interrupted',
     );
+
+    ok( -d $pre_commit_dir, 'pre commit dir exists after run() is called' );
+
+    undef $step_that_lives;
+    ok( !-d $pre_commit_dir,
+        'pre commit dir cleaned when step goes out of scope' );
 }
 
 {
