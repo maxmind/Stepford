@@ -11,8 +11,8 @@ use Test::Fatal;
 use Test::More;
 
 my $tempdir = tempdir( CLEANUP => 1 );
-my $logger =
-  Log::Dispatch->new( outputs => [ [ Null => min_level => 'emerg' ] ] );
+my $logger
+    = Log::Dispatch->new( outputs => [ [ Null => min_level => 'emerg' ] ] );
 
 {
 
@@ -70,8 +70,8 @@ my $logger =
 }
 
 {
-    my $iut =
-      AtomicFileGeneratorTest::NoWrittenFileStep->new( logger => $logger );
+    my $iut = AtomicFileGeneratorTest::NoWrittenFileStep->new(
+        logger => $logger );
     my $e = exception { $iut->run() };
     like(
         $e,
@@ -81,7 +81,7 @@ my $logger =
             \Qrun() produced no pre-commit production file at: \E
            /x,
         'AtomicFileGeneratorTest::NoWrittenFileStep->run() dies because the'
-          . ' production file was not found after concrete step run()',
+            . ' production file was not found after concrete step run()',
     );
 }
 
@@ -137,8 +137,10 @@ my $logger =
     ok( -d $pre_commit_dir, 'pre commit dir exists after run() is called' );
 
     undef $step_that_lives;
-    ok( !-d $pre_commit_dir,
-        'pre commit dir cleaned when step goes out of scope' );
+    ok(
+        !-d $pre_commit_dir,
+        'pre commit dir cleaned when step goes out of scope'
+    );
 }
 
 {
