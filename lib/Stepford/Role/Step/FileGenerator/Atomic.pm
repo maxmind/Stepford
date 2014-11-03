@@ -74,7 +74,7 @@ will not exist if the step aborts. The file will only be committed to its
 final destination when C<run()> completes successfully.
 
 Instead of manipulating the file production directly, you work with the file
-given by C<$step->pre_commit_file()>. This role will make sure it gets
+given by C<< $step->pre_commit_file() >>. This role will make sure it gets
 committed after C<run()>.
 
 =head1 METHODS
