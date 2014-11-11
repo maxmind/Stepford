@@ -13,17 +13,19 @@ use Moose::Role;
 
 with 'Stepford::Role::Step::FileGenerator';
 
-has _temp_dir_handle => (
-    is      => 'ro',
-    isa     => 'File::Temp::Dir',
-    default => sub { File::Temp->new()->newdir() },
+has _tempdir => (
+    is       => 'ro',
+    isa      => 'File::Temp::Dir',
+    init_arg => undef,
+    lazy     => 1,
+    default  => sub { File::Temp->newdir() },
 );
 
 has pre_commit_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    default => sub { dir( shift->_temp_dir_handle() )->file('pre-commit') },
+    default => sub { dir( $_[0]->_tempdir() )->file('pre-commit') },
 );
 
 sub BUILD { }
@@ -91,3 +93,11 @@ only one production.
 This returns a temporary file in a temporary directory that you can manipulate
 inside C<run()>. It will be removed if the step fails, or renamed to the final
 file production if the step succeeds.
+
+=head1 CAVEATS
+
+When running steps in parallel, it is important to ensure that you do not call
+the C<< $step->pre_commit_file() >> method outside of the C<< $step->run() >>
+method. If you call this at object creation time, this can cause the tempdir
+containing the pre-commit file to be created and destroyed before the run
+method ever gets a chance to run.
