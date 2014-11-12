@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.002010 2014-11-12
+
 - Fixed a bug with Stepford::Role::Step::FileGenerator::Atomic steps and
   parallel test runs. The step would create a temp directory in the parent
   process which could be deleted by the time the step's run() method was
