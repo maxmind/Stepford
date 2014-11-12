@@ -99,5 +99,5 @@ file production if the step succeeds.
 When running steps in parallel, it is important to ensure that you do not call
 the C<< $step->pre_commit_file() >> method outside of the C<< $step->run() >>
 method. If you call this at object creation time, this can cause the tempdir
-containing the pre-commit file to be created and destroyed before the run
-method ever gets a chance to run.
+containing the C< pre_commit_file > file to be created and destroyed before the
+run method ever gets a chance to run.
