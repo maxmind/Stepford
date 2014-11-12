@@ -1,13 +1,11 @@
 use strict;
 use warnings;
 
-use lib 't/lib';
-
 use Log::Dispatch;
 use Log::Dispatch::Null;
 use Path::Class qw( tempdir );
-use Test::Fatal;
 
+use Test::Fatal;
 use Test::More;
 
 my $tempdir = tempdir( CLEANUP => 1 );
@@ -86,7 +84,6 @@ my $logger
 }
 
 {
-
     package AtomicFileGeneratorTest::TwoLineFileGenerator;
 
     use Moose;
