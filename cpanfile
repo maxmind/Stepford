@@ -18,6 +18,7 @@ requires "MooseX::Types::Path::Class" => "0";
 requires "Parallel::ForkManager" => "0";
 requires "Path::Class" => "0";
 requires "Scalar::Util" => "0";
+requires "Scope::Guard" => "0";
 requires "Throwable::Error" => "0";
 requires "Time::HiRes" => "1.9726";
 requires "namespace::autoclean" => "0";

@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.002011 2014-11-13
+
 - The Stepford::Role::Step::FileGenerator::Atomic now creates its
   pre_commit_file() in the same directory as the final file. Previously we
   used a temp dir but renaming the pre_commit_file() to the final file could
