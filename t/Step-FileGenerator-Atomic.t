@@ -120,8 +120,13 @@ my $logger
         a_file     => $file,
     );
 
-    my $pre_commit_dir = $step_that_lives->pre_commit_file()->parent();
-    ok( -d $pre_commit_dir, 'pre commit dir exists before run() is called' );
+    my $pre_commit_file = $step_that_lives->pre_commit_file();
+    is(
+        $pre_commit_file->parent()->stringify(),
+        $file->parent()->stringify(),
+        'pre_commit_file and final file are in the same directory'
+    );
+
 
     $step_that_lives->run();
     is(
@@ -131,12 +136,10 @@ my $logger
             . ' interrupted',
     );
 
-    ok( -d $pre_commit_dir, 'pre commit dir exists after run() is called' );
-
     undef $step_that_lives;
     ok(
-        !-d $pre_commit_dir,
-        'pre commit dir cleaned when step goes out of scope'
+        !-f $pre_commit_file,
+        'pre commit file cleaned after step runs'
     );
 }
 
@@ -147,8 +150,16 @@ my $logger
         should_die => 1,
         a_file     => $file,
     );
+
+    my $pre_commit_file = $step_that_dies->pre_commit_file();
+
     exception { $step_that_dies->run() };
     ok( !-e $file, 'file not written at all when run() interrupted' );
+
+    ok(
+        !-f $pre_commit_file,
+        'pre commit file cleaned even if step dies mid-run'
+    );
 }
 
 done_testing();

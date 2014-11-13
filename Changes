@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+- The Stepford::Role::Step::FileGenerator::Atomic now creates its
+  pre_commit_file() in the same directory as the final file. Previously we
+  used a temp dir but renaming the pre_commit_file() to the final file could
+  fail if the two files were on different filesystems.
+
+
 0.002010 2014-11-12
 
 - Fixed a bug with Stepford::Role::Step::FileGenerator::Atomic steps and
