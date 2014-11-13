@@ -6,26 +6,19 @@ use namespace::autoclean;
 
 use Carp qw( croak );
 use File::Temp;
-use Path::Class qw( dir );
+use Path::Class qw( file );
+use Scope::Guard qw( guard );
 use Stepford::Types qw( File );
 
 use Moose::Role;
 
 with 'Stepford::Role::Step::FileGenerator';
 
-has _tempdir => (
-    is       => 'ro',
-    isa      => 'File::Temp::Dir',
-    init_arg => undef,
-    lazy     => 1,
-    default  => sub { File::Temp->newdir() },
-);
-
 has pre_commit_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    default => sub { dir( $_[0]->_tempdir() )->file('pre-commit') },
+    builder => '_build_pre_commit_file',
 );
 
 sub BUILD { }
@@ -43,10 +36,23 @@ before BUILD => sub {
     return;
 };
 
-after run => sub {
+sub _build_pre_commit_file {
+    my $self = shift;
+
+    my $final_file = ( $self->productions() )[0];
+    my $reader = $final_file->get_read_method();
+
+    return file( $self->$reader() . '.tmp' );
+}
+
+around run => sub {
+    my $orig = shift;
     my $self = shift;
 
     my $pre_commit = $self->pre_commit_file();
+    my $guard = guard { $pre_commit->remove() if -f $pre_commit };
+
+    $self->$orig(@_);
 
     croak 'The '
         . ( ref $self )
