@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+- Added the Stepford::Role::Step::Unserializable role. This role tells the
+  Stepford::Planner not to run the step class in a forked process because it's
+  productions cannot be serialized. Instead, this step will be run in the same
+  process as the planner.
+
+
 0.002011 2014-11-13
 
 - The Stepford::Role::Step::FileGenerator::Atomic now creates its

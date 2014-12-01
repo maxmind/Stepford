@@ -100,13 +100,7 @@ sub _run_sequential {
         $run_data->start_step_set();
 
         for my $class ( @{$set} ) {
-            my $step = $run_data->make_step_object( $class, $config );
-
-            $step->run()
-                unless $run_data->step_is_up_to_date($step);
-
-            $run_data->record_run_time( $step->last_run_time() );
-            $run_data->record_productions( $step->productions_as_hashref() );
+            $self->_run_step_in_process( $run_data, $class, $config );
         }
     }
 }
@@ -119,26 +113,30 @@ sub _run_parallel {
     my $pm = Parallel::ForkManager->new( $self->jobs() );
 
     my $run_data = Stepford::RunData->new( logger => $self->logger() );
+    $pm->run_on_finish(
+        sub {
+            my ( $pid, $exit_code, $message ) = @_[ 0, 1, 5 ];
+
+            if ($exit_code) {
+                $pm->wait_all_children();
+                die "Child process $pid failed";
+            }
+            else {
+                $run_data->record_run_time( $message->{last_run_time} );
+                $run_data->record_productions( $message->{productions} );
+            }
+        }
+    );
 
     for my $set ( $plan->step_sets() ) {
         $run_data->start_step_set();
 
-        $pm->run_on_finish(
-            sub {
-                my ( $pid, $exit_code, $message ) = @_[ 0, 1, 5 ];
-
-                if ($exit_code) {
-                    $pm->wait_all_children();
-                    die "Child process $pid failed";
-                }
-                else {
-                    $run_data->record_run_time( $message->{last_run_time} );
-                    $run_data->record_productions( $message->{productions} );
-                }
-            }
-        );
-
         for my $class ( @{$set} ) {
+            if ( $class->does('Stepford::Role::Step::Unserializable') ) {
+                $self->_run_step_in_process( $run_data, $class, $config );
+                next;
+            }
+
             my $step = $run_data->make_step_object( $class, $config );
 
             if ( $run_data->step_is_up_to_date($step) ) {
@@ -167,6 +165,23 @@ sub _run_parallel {
         $self->logger()->debug('Waiting for children');
         $pm->wait_all_children();
     }
+}
+
+sub _run_step_in_process {
+    my $self     = shift;
+    my $run_data = shift;
+    my $class    = shift;
+    my $config   = shift;
+
+    my $step = $run_data->make_step_object( $class, $config );
+
+    $step->run()
+        unless $run_data->step_is_up_to_date($step);
+
+    $run_data->record_run_time( $step->last_run_time() );
+    $run_data->record_productions( $step->productions_as_hashref() );
+
+    return;
 }
 
 sub _make_plan {
@@ -391,12 +406,19 @@ This method returns the step namespaces passed to the constructor as a list
 This method returns the C<logger> used by the planner, either what you passed
 to the constructor or a default.
 
-=head1 PARALLEL RUN CAVEATS
+=head1 PARALLEL RUNS AND SERIALIZATION
 
 When running steps in parallel, the results of a step (its productions) are
 sent from a child process to the parent by serializing them. This means that
-productions which can't be serialized (like a L<DBI> handle) will probably
-blow up in some way. You'll need to find a way to work around this. For
+productions which can't be serialized (like a filehandle or L<DBI> handle)
+will cause the planner to die when it tries to serialize their productions.
+
+You can force a step class to be run in the same process as the planner itself
+by having that step consume the L<Stepford::Role::Step::Unserializable>
+role. Note that the planner may still fork I<after> a production has been
+generated, so the values returned for a production must be able to survive a
+fork, even if they cannot be serialized.
+
+You can also work around this by changing the production entirely. For
 example, instead of passing a DBI handle you could pass a data structure with
 a DSN, username, password, and connection options.
-
