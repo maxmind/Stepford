@@ -57,12 +57,11 @@ sub has_production {
     return any { $_->name() eq $name } $class->productions();
 }
 
-sub productions_as_hash {
+sub productions_as_hashref {
     my $self = shift;
 
-    return
-        map { $_->name() => $self->production_value( $_->name() ) }
-        $self->productions();
+    return { map { $_->name() => $self->production_value( $_->name() ) }
+            $self->productions() };
 }
 
 sub production_value {
@@ -119,9 +118,9 @@ given the C<StepProduction> trait. This can be an empty list.
 
 Returns true if the step has a production of the given name.
 
-=head2 $step->productions_as_hash()
+=head2 $step->productions_as_hashref()
 
-Returns all production values as a hash.
+Returns all production values as a hash reference.
 
 =head2 $step->production_value($name)
 

@@ -11,6 +11,7 @@ use Parallel::ForkManager;
 use Scalar::Util qw( blessed );
 use Stepford::Error;
 use Stepford::Plan;
+use Stepford::RunData;
 use Stepford::Types qw(
     ArrayOfClassPrefixes ArrayOfSteps ClassName
     HashRef Logger PositiveInt Step
@@ -93,29 +94,19 @@ sub _run_sequential {
     my $plan   = shift;
     my $config = shift;
 
-    my %productions;
-    my @previous_steps_run_times;
-    my @current_steps_run_times;
+    my $run_data = Stepford::RunData->new( logger => $self->logger() );
 
     for my $set ( $plan->step_sets() ) {
-        @previous_steps_run_times = @current_steps_run_times;
-        @current_steps_run_times  = ();
+        $run_data->start_step_set();
 
-        for my $class (@{$set}) {
-            my $step
-                = $self->_make_step_object( $class, \%productions, $config );
+        for my $class ( @{$set} ) {
+            my $step = $run_data->make_step_object( $class, $config );
 
             $step->run()
-                unless $self->_step_is_up_to_date(
-                $step,
-                \@previous_steps_run_times
-                );
+                unless $run_data->step_is_up_to_date($step);
 
-            push @current_steps_run_times, $step->last_run_time();
-            %productions = (
-                %productions,
-                $step->productions_as_hash(),
-            );
+            $run_data->record_run_time( $step->last_run_time() );
+            $run_data->record_productions( $step->productions_as_hashref() );
         }
     }
 }
@@ -127,13 +118,10 @@ sub _run_parallel {
 
     my $pm = Parallel::ForkManager->new( $self->jobs() );
 
-    my %productions;
-    my @previous_steps_run_times;
-    my @current_steps_run_times;
+    my $run_data = Stepford::RunData->new( logger => $self->logger() );
 
     for my $set ( $plan->step_sets() ) {
-        @previous_steps_run_times = @current_steps_run_times;
-        @current_steps_run_times  = ();
+        $run_data->start_step_set();
 
         $pm->run_on_finish(
             sub {
@@ -144,30 +132,19 @@ sub _run_parallel {
                     die "Child process $pid failed";
                 }
                 else {
-                    push @current_steps_run_times, $message->{last_run_time};
-                    %productions = (
-                        %productions,
-                        %{ $message->{productions} },
-                    );
+                    $run_data->record_run_time( $message->{last_run_time} );
+                    $run_data->record_productions( $message->{productions} );
                 }
             }
         );
 
-        for my $class (@{$set}) {
-            my $step
-                = $self->_make_step_object( $class, \%productions, $config );
+        for my $class ( @{$set} ) {
+            my $step = $run_data->make_step_object( $class, $config );
 
-            if (
-                $self->_step_is_up_to_date(
-                    $step, \@previous_steps_run_times
-                )
-                ) {
-
-                push @current_steps_run_times, $step->last_run_time();
-                %productions = (
-                    %productions,
-                    $step->productions_as_hash(),
-                );
+            if ( $run_data->step_is_up_to_date($step) ) {
+                $run_data->record_run_time( $step->last_run_time() );
+                $run_data->record_productions(
+                    $step->productions_as_hashref() );
                 next;
             }
 
@@ -181,8 +158,8 @@ sub _run_parallel {
             $pm->finish(
                 0,
                 {
-                    last_run_time => $step->last_run_time(),
-                    productions   => { $step->productions_as_hash() },
+                    last_run_time => scalar $step->last_run_time(),
+                    productions   => $step->productions_as_hashref(),
                 }
             );
         }
@@ -201,83 +178,6 @@ sub _make_plan {
         final_steps  => $final_steps,
         logger       => $self->logger(),
     );
-}
-
-sub _make_step_object {
-    my $self        = shift;
-    my $class       = shift;
-    my $productions = shift;
-    my $config      = shift;
-
-    my $args = $self->_constructor_args_for_class(
-        $class,
-        $productions,
-        $config,
-    );
-
-    $self->logger()->debug("$class->new()");
-
-    return $class->new($args);
-}
-
-sub _constructor_args_for_class {
-    my $self        = shift;
-    my $class       = shift;
-    my $productions = shift;
-    my $config      = shift;
-
-    my %args;
-    for my $init_arg (
-        grep { defined }
-        map  { $_->init_arg() } $class->meta()->get_all_attributes()
-        ) {
-
-        $args{$init_arg} = $config->{$init_arg}
-            if exists $config->{$init_arg};
-    }
-
-    for my $dep ( map { $_->name() } $class->dependencies() ) {
-
-        # XXX - I'm not sure this error is reachable. We already check that a
-        # class's declared dependencies can be satisfied while building the
-        # tree. That said, it doesn't hurt to leave this check in here, and it
-        # might help illuminate bugs in the Planner itself.
-        Stepford::Error->throw(
-            "Cannot construct a $class object. We are missing a required production: $dep"
-        ) unless exists $productions->{$dep};
-
-        $args{$dep} = $productions->{$dep};
-    }
-
-    $args{logger} = $self->logger();
-
-    return \%args;
-}
-
-sub _step_is_up_to_date {
-    my $self                     = shift;
-    my $step                     = shift;
-    my $previous_steps_run_times = shift;
-
-    my $previous_steps_last_run_time
-        = max( grep { defined } @{$previous_steps_run_times} );
-
-    my $step_last_run_time = $step->last_run_time();
-
-    if (   defined $previous_steps_last_run_time
-        && defined $step_last_run_time
-        && $step_last_run_time >= $previous_steps_last_run_time ) {
-
-        my $class = blessed $step;
-        $self->logger()
-            ->info( "Last run time for $class is $step_last_run_time."
-                . " Previous steps last run time is $previous_steps_last_run_time."
-                . ' Skipping this step.' );
-
-        return 1;
-    }
-
-    return 0;
 }
 
 sub _build_step_classes {
