@@ -467,7 +467,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
     is(
         scalar $tempdir->file('test7-step-a')->slurp(),
         'new content',
-        'values passed to $planner->run() are passed to step constructor'
+        'config passed to $planner->run() is passed to step constructor'
     );
 }
 
