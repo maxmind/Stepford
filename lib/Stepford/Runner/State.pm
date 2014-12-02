@@ -1,4 +1,4 @@
-package Stepford::RunData;
+package Stepford::Runner::State;
 
 use strict;
 use warnings;

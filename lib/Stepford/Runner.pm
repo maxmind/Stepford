@@ -11,7 +11,7 @@ use Parallel::ForkManager;
 use Scalar::Util qw( blessed );
 use Stepford::Error;
 use Stepford::Plan;
-use Stepford::RunData;
+use Stepford::Runner::State;
 use Stepford::Types qw(
     ArrayOfClassPrefixes ArrayOfSteps ClassName
     HashRef Logger PositiveInt Step
@@ -94,13 +94,13 @@ sub _run_sequential {
     my $plan   = shift;
     my $config = shift;
 
-    my $run_data = Stepford::RunData->new( logger => $self->logger() );
+    my $state = Stepford::Runner::State->new( logger => $self->logger() );
 
     for my $set ( $plan->step_sets() ) {
-        $run_data->start_step_set();
+        $state->start_step_set();
 
         for my $class ( @{$set} ) {
-            $self->_run_step_in_process( $run_data, $class, $config );
+            $self->_run_step_in_process( $state, $class, $config );
         }
     }
 }
@@ -112,7 +112,7 @@ sub _run_parallel {
 
     my $pm = Parallel::ForkManager->new( $self->jobs() );
 
-    my $run_data = Stepford::RunData->new( logger => $self->logger() );
+    my $state = Stepford::Runner::State->new( logger => $self->logger() );
     $pm->run_on_finish(
         sub {
             my ( $pid, $exit_code, $message ) = @_[ 0, 1, 5 ];
@@ -122,27 +122,26 @@ sub _run_parallel {
                 die "Child process $pid failed";
             }
             else {
-                $run_data->record_run_time( $message->{last_run_time} );
-                $run_data->record_productions( $message->{productions} );
+                $state->record_run_time( $message->{last_run_time} );
+                $state->record_productions( $message->{productions} );
             }
         }
     );
 
     for my $set ( $plan->step_sets() ) {
-        $run_data->start_step_set();
+        $state->start_step_set();
 
         for my $class ( @{$set} ) {
             if ( $class->does('Stepford::Role::Step::Unserializable') ) {
-                $self->_run_step_in_process( $run_data, $class, $config );
+                $self->_run_step_in_process( $state, $class, $config );
                 next;
             }
 
-            my $step = $run_data->make_step_object( $class, $config );
+            my $step = $state->make_step_object( $class, $config );
 
-            if ( $run_data->step_is_up_to_date($step) ) {
-                $run_data->record_run_time( $step->last_run_time() );
-                $run_data->record_productions(
-                    $step->productions_as_hashref() );
+            if ( $state->step_is_up_to_date($step) ) {
+                $state->record_run_time( $step->last_run_time() );
+                $state->record_productions( $step->productions_as_hashref() );
                 next;
             }
 
@@ -168,18 +167,18 @@ sub _run_parallel {
 }
 
 sub _run_step_in_process {
-    my $self     = shift;
-    my $run_data = shift;
-    my $class    = shift;
-    my $config   = shift;
+    my $self   = shift;
+    my $state  = shift;
+    my $class  = shift;
+    my $config = shift;
 
-    my $step = $run_data->make_step_object( $class, $config );
+    my $step = $state->make_step_object( $class, $config );
 
     $step->run()
-        unless $run_data->step_is_up_to_date($step);
+        unless $state->step_is_up_to_date($step);
 
-    $run_data->record_run_time( $step->last_run_time() );
-    $run_data->record_productions( $step->productions_as_hashref() );
+    $state->record_run_time( $step->last_run_time() );
+    $state->record_productions( $step->productions_as_hashref() );
 
     return;
 }
