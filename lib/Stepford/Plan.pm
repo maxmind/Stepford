@@ -179,7 +179,7 @@ __PACKAGE__->meta()->make_immutable();
 
 1;
 
-# ABSTRACT: Represents a concrete plan for execution by a Stepford::Planner
+# ABSTRACT: Represents a concrete plan for execution by a Stepford::Runner
 
 __END__
 
