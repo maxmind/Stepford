@@ -7,7 +7,7 @@ use List::AllUtils qw( first );
 use Log::Dispatch;
 use Log::Dispatch::Array;
 use Path::Class qw( dir tempdir );
-use Stepford::Planner;
+use Stepford::Runner;
 use Time::HiRes 1.9726 qw( stat time );
 
 use Test::Differences;
@@ -31,7 +31,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
     require Test1::Step::CombineFiles;
 
-    my $planner = Stepford::Planner->new(
+    my $planner = Stepford::Runner->new(
         step_namespaces => 'Test1::Step',
         logger          => $logger,
     );
@@ -236,7 +236,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 }
 
 {
-    my $planner = Stepford::Planner->new(
+    my $planner = Stepford::Runner->new(
         step_namespaces => 'Test2::Step',
     );
 
@@ -297,7 +297,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
 {
     my $e = exception {
-        Stepford::Planner->new(
+        Stepford::Runner->new(
             step_namespaces => 'Test3::Step',
             )->run(
             final_steps => 'Test3::Step::B',
@@ -334,7 +334,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
 {
     my $e = exception {
-        Stepford::Planner->new(
+        Stepford::Runner->new(
             step_namespaces => 'Test4::Step',
             )->run(
             final_steps => 'Test4::Step::A',
@@ -368,7 +368,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
 {
     my $e = exception {
-        Stepford::Planner->new(
+        Stepford::Runner->new(
             step_namespaces => 'Test5::Step',
             )->run(
             final_steps => 'Test5::Step::A',
@@ -413,7 +413,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 }
 
 {
-    my $plan = Stepford::Planner->new(
+    my $plan = Stepford::Runner->new(
         step_namespaces => 'Test6::Step',
     )->_make_plan( ['Test6::Step::A2'] );
 
@@ -452,7 +452,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 }
 
 {
-    my $planner = Stepford::Planner->new(
+    my $planner = Stepford::Runner->new(
         step_namespaces => 'Test7::Step',
     );
 
@@ -617,7 +617,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 }
 
 {
-    my $planner = Stepford::Planner->new(
+    my $planner = Stepford::Runner->new(
         step_namespaces => 'Test8::Step',
     );
 
@@ -652,7 +652,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
 {
     my $e = exception {
-        Stepford::Planner->new(
+        Stepford::Runner->new(
             step_namespaces => 'Test9::Step',
             )->run(
             final_steps => 'Test9::Step::A',

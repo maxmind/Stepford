@@ -15,6 +15,6 @@ __END__
 =head1 DESCRIPTION
 
 If your step class consumes this role, then that step will not be run in a
-child process even when running a parallel plan with L<Stepford::Planner>. See
-the L<Stepford::Planner> docs for more details.
+child process even when running a parallel plan with L<Stepford::Runner>. See
+the L<Stepford::Runner> docs for more details.
 

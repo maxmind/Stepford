@@ -5,7 +5,7 @@ use lib 't/lib';
 
 use File::Temp qw( tempdir );
 use Path::Class qw( dir );
-use Stepford::Planner;
+use Stepford::Runner;
 
 use Test::More;
 
@@ -48,7 +48,7 @@ sub _run_combine_files {
     my $jobs    = shift;
     my $tempdir = shift;
 
-    my $planner = Stepford::Planner->new(
+    my $planner = Stepford::Runner->new(
         step_namespaces => 'Test1::Step',
         jobs            => $jobs,
     );

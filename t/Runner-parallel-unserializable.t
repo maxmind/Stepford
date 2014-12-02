@@ -4,7 +4,7 @@ use warnings;
 use lib 't/lib';
 
 use Path::Class qw( tempdir );
-use Stepford::Planner;
+use Stepford::Runner;
 
 use Test::Fatal;
 use Test::More;
@@ -69,7 +69,7 @@ my $file2 = $tempdir->file('file2');
 }
 
 {
-    my $planner = Stepford::Planner->new(
+    my $planner = Stepford::Runner->new(
         step_namespaces => 'Test::Step',
         jobs            => 2,
     );

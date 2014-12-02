@@ -1,4 +1,4 @@
-package Stepford::Planner;
+package Stepford::Runner;
 
 use strict;
 use warnings;
@@ -265,13 +265,13 @@ __END__
 
 =head1 SYNOPSIS
 
-    use Stepford::Planner;
+    use Stepford::Runner;
 
-    my $planner = Stepford::Planner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => 'My::Step',
     );
 
-    $planner->run(
+    $runner->run(
         final_steps => [
             'My::Step::DeployCatDatabase',
             'My::Step::DeployDogDatabase',
@@ -292,9 +292,9 @@ is done.
 
 This class provides the following methods:
 
-=head2 Stepford::Planner->new(...)
+=head2 Stepford::Runner->new(...)
 
-This method returns a new planner object. It accepts the following arguments:
+This method returns a new runner object. It accepts the following arguments:
 
 =over 4
 
@@ -315,7 +315,7 @@ class names based on the order of the namespaces provided to the constructor,
 and then the full name of the class. You can take advantage of this feature to
 provide different steps in a different environments (for example, for testing).
 
-The planner object assumes that every B<class> it finds in a step namespace is
+The runner object assumes that every B<class> it finds in a step namespace is
 a step. Specifically, if it finds a package that is a subclass of
 L<Moose::Object>, then it throws an error if that package does not also
 consume the L<Stepford::Role::Step> role.
@@ -329,7 +329,7 @@ This argument default to 1.
 
 The number of jobs to run at a time. By default, all steps are run
 sequentially. However, if you set this to a value greater than 1 then the
-planner will run steps in parallel, up to the value you set.
+runner will run steps in parallel, up to the value you set.
 
 =item * logger
 
@@ -338,7 +338,7 @@ This argument is optional.
 This should be an object that provides C<debug()>, C<info()>, C<notice()>,
 C<warning()>, and C<error()> methods.
 
-This object will receive log messages from the planner and (possibly your
+This object will receive log messages from the runner and (possibly your
 steps).
 
 If this is not provided, Stepford will create a L<Log::Dispatch> object with a
@@ -350,9 +350,9 @@ load L<Log::Dispatch> into memory.
 
 =back
 
-=head2 $planner->run()
+=head2 $runner->run()
 
-When this method is called, the planner comes up with a plan of the steps
+When this method is called, the runner comes up with a plan of the steps
 needed to get to the requested final steps.
 
 When this method is called, we check for circular dependencies among the steps
@@ -360,9 +360,9 @@ and will throw a L<Stepford::Error> exception if it finds one. We also check
 for unsatisfied dependencies for steps in the plan. Finally, we check to make
 sure that no step provides its own dependencies as productions.
 
-For each step, the planner checks if it is up to date compared to its
+For each step, the runner checks if it is up to date compared to its
 dependencies (as determined by the C<< $step->last_run_time() >> method. If
-the step is up to date, it is skipped, otherwise the planner calls C<<
+the step is up to date, it is skipped, otherwise the runner calls C<<
 $step->run() >> on the step.
 
 Note that the step objects are always I<constructed>, so you should avoid
@@ -380,12 +380,12 @@ This can either be a string or an array reference of strings. Each string
 should be a step's class name. These classes must do the
 L<Stepford::Role::Step> role.
 
-These are the final steps run when the C<< $planner->run() >> method is
+These are the final steps run when the C<< $runner->run() >> method is
 called.
 
 =item * config
 
-This is an optional hash reference. For each step constructed, the planner
+This is an optional hash reference. For each step constructed, the runner
 looks at the attributes that the step accepts. If they match any of the keys
 in this hash reference, the key/value pair from this hash reference will be
 passed to the step constructor. This matching is done based on attribute
@@ -396,14 +396,14 @@ the corresponding key in the config hash reference.
 
 =back
 
-=head2 $planner->step_namespaces()
+=head2 $runner->step_namespaces()
 
 This method returns the step namespaces passed to the constructor as a list
 (not an arrayref).
 
-=head2 $planner->logger()
+=head2 $runner->logger()
 
-This method returns the C<logger> used by the planner, either what you passed
+This method returns the C<logger> used by the runner, either what you passed
 to the constructor or a default.
 
 =head1 PARALLEL RUNS AND SERIALIZATION
@@ -411,11 +411,11 @@ to the constructor or a default.
 When running steps in parallel, the results of a step (its productions) are
 sent from a child process to the parent by serializing them. This means that
 productions which can't be serialized (like a filehandle or L<DBI> handle)
-will cause the planner to die when it tries to serialize their productions.
+will cause the runner to die when it tries to serialize their productions.
 
-You can force a step class to be run in the same process as the planner itself
+You can force a step class to be run in the same process as the runner itself
 by having that step consume the L<Stepford::Role::Step::Unserializable>
-role. Note that the planner may still fork I<after> a production has been
+role. Note that the runner may still fork I<after> a production has been
 generated, so the values returned for a production must be able to survive a
 fork, even if they cannot be serialized.
 

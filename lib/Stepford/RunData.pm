@@ -89,7 +89,7 @@ sub _constructor_args_for_class {
         # XXX - I'm not sure this error is reachable. We already check that a
         # class's declared dependencies can be satisfied while building the
         # tree. That said, it doesn't hurt to leave this check in here, and it
-        # might help illuminate bugs in the Planner itself.
+        # might help illuminate bugs in the Runner itself.
         Stepford::Error->throw(
             "Cannot construct a $class object. We are missing a required production: $dep"
         ) unless exists $productions->{$dep};
@@ -162,5 +162,5 @@ __END__
 
 =head1 DESCRIPTION
 
-This class is only used by the L<Stepford::Planner> object and has no
+This class is only used by the L<Stepford::Runner> object and has no
 user-facing parts.

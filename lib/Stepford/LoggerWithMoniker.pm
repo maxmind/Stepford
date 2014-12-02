@@ -46,7 +46,7 @@ __END__
 
 =head1 DESCRIPTION
 
-This class wraps the logger passed in by the Planner. It prefixes the messages
+This class wraps the logger passed in by the Runner. It prefixes the messages
 with the step name. This class has no user-facing parts.
 
 =cut

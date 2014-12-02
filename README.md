@@ -42,9 +42,9 @@ version 0.002011
 
     package My::Runner;
 
-    use Stepford::Planner;
+    use Stepford::Runner;
 
-    my $planner = Stepford::Planner->new(
+    my $planner = Stepford::Runner->new(
         step_namespaces => 'My::Step',
         logger          => $log_object,    # optional
         jobs            => 4,              # optional
@@ -72,7 +72,7 @@ Steps declare both their dependencies (required inputs) and productions
 (outputs) as attributes. These attributes should be given either the
 `StepDependency` or `StepProduction` trait as appropriate.
 
-The [Stepford::Planner](https://metacpan.org/pod/Stepford::Planner) class analyzes the dependencies and productions for
+The [Stepford::Runner](https://metacpan.org/pod/Stepford::Runner) class analyzes the dependencies and productions for
 each step to figure out what steps it needs to run in order to satisfy the
 dependencies of the final steps you specify.
 
@@ -80,7 +80,7 @@ Each step can specify a `last_run_time()` method (or get one from the
 [StepFord::Role::Step::FileGenerator](https://metacpan.org/pod/StepFord::Role::Step::FileGenerator) role). The planner uses this to skip
 steps that are up to date.
 
-See [Stepford::Planner](https://metacpan.org/pod/Stepford::Planner), [Stepford::Role::Step](https://metacpan.org/pod/Stepford::Role::Step), and
+See [Stepford::Runner](https://metacpan.org/pod/Stepford::Runner), [Stepford::Role::Step](https://metacpan.org/pod/Stepford::Role::Step), and
 [StepFord::Role::Step::FileGenerator](https://metacpan.org/pod/StepFord::Role::Step::FileGenerator) for more details.
 
 # CONCEPTS AND DESIGN
@@ -110,7 +110,7 @@ step (they can also be supplied to the planner manually).
 The flip side of a dependency is a production. This is a value that the step
 will generate as needed.
 
-Steps are run by a [Stepford::Planner](https://metacpan.org/pod/Stepford::Planner) object. To create this object, you
+Steps are run by a [Stepford::Runner](https://metacpan.org/pod/Stepford::Runner) object. To create this object, you
 give it a list of step namespaces and the class(es) of the final step(s) you
 want to run. The planner looks at the final steps' dependencies and uses this
 information to figure out what other steps to run. It looks for steps with
@@ -128,7 +128,7 @@ that satisfies the dependency (in terms of the value's type, content, etc.).
 
 If multiple classes have a production of the same name, then the first class
 that Stepford sees "wins". This can be useful if you want to override a step
-for testing, for example. See the documentation of the [Stepford::Planner](https://metacpan.org/pod/Stepford::Planner)
+for testing, for example. See the documentation of the [Stepford::Runner](https://metacpan.org/pod/Stepford::Runner)
 class's `new()` method for more details on step namespaces.
 
 It is not possible for a class to have an attribute that is simultaneously a

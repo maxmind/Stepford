@@ -1,7 +1,13 @@
 {{$NEXT}}
 
+[BACKWARDS INCOMPATIBILITIES]
+
+- Renamed Stepford::Planner to Stepford::Runner.
+
+[ENHANCEMENTS]
+
 - Added the Stepford::Role::Step::Unserializable role. This role tells the
-  Stepford::Planner not to run the step class in a forked process because it's
+  Stepford::Runner not to run the step class in a forked process because it's
   productions cannot be serialized. Instead, this step will be run in the same
   process as the planner.
 
@@ -58,13 +64,13 @@
 
 0.002005 2014-06-30
 
-- More doc fixes for Stepford::Planner. The docs on when we do error checks
+- More doc fixes for Stepford::Runner. The docs on when we do error checks
   and what type of errors are checked for were out of date.
 
 
 0.002004 2014-06-30
 
-- Fixed the Stepford::Planner docs. The docs said that the constructor
+- Fixed the Stepford::Runner docs. The docs said that the constructor
   accepted a final_steps method, and did not document the parameter passed to
   the run() method properly. Bug report by Olaf Alders. GH #5.
 
@@ -77,21 +83,21 @@
 
 0.002002 2014-06-02
 
-- The Stepford::Planner object now throws an error if it finds a class in any
+- The Stepford::Runner object now throws an error if it finds a class in any
   given step namespace that is a subclass of Moose::Object but which doesn't
   consume the Stepford::Role::Step role.
 
 
 0.002001 2014-05-21
 
-- Fixed an incorrect example in the Stepford::Planner SYNOPSIS and improved
+- Fixed an incorrect example in the Stepford::Runner SYNOPSIS and improved
   the larger example in the Stepford.pm SYNOPSIS.
 
 
 0.002000 2014-05-21
 
 * Breaking API changes. Final step(s) are now passed to the $planner->run()
-  method rather than the Stepford::Planner constructor.
+  method rather than the Stepford::Runner constructor.
 
 - Implemented the ability to specify multiple final steps for a run.
 

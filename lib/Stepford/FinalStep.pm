@@ -37,4 +37,4 @@ __END__
 =head1 DESCRIPTION
 
 This step just logs the message "Completed execution". It is always run as the
-last step when calling C<run()> on a L<Stepford::Planner> object.
+last step when calling C<run()> on a L<Stepford::Runner> object.

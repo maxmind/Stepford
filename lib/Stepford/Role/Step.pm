@@ -90,7 +90,7 @@ __END__
 =head1 DESCRIPTION
 
 All of your step classes must consume this role. It provides the basic
-interface that the L<Stepford::Planner> class expects.
+interface that the L<Stepford::Runner> class expects.
 
 =head1 ATTRIBUTES
 
@@ -99,7 +99,7 @@ This role provides one attribute:
 =head2 logger
 
 This attribute is required for all roles. It will be provided to your step
-classes by the L<Stepford::Planner> object.
+classes by the L<Stepford::Runner> object.
 
 The Step object will wrap the logger with an object that prepends prepends
 C<[$log_moniker] > to each log message. The moniker is determined by calling

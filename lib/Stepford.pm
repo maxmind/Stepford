@@ -5,7 +5,7 @@ use warnings;
 
 1;
 
-# ABSTRACT: A vaguely Rake/Make/Cake-like thing for Perl - create steps and let a planner run them
+# ABSTRACT: A vaguely Rake/Make/Cake-like thing for Perl - create steps and let a runner run them
 
 __END__
 
@@ -48,16 +48,16 @@ my $log_object;
 
     package My::Runner;
 
-    use Stepford::Planner;
+    use Stepford::Runner;
 
-    my $planner = Stepford::Planner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => 'My::Step',
         logger          => $log_object,    # optional
         jobs            => 4,              # optional
     );
 
     # Runs all the steps needed to get to the final_steps.
-    $planner->run(
+    $runner->run(
         final_steps => 'My::Step::MakeSomething',
     );
 
@@ -78,15 +78,15 @@ Steps declare both their dependencies (required inputs) and productions
 (outputs) as attributes. These attributes should be given either the
 C<StepDependency> or C<StepProduction> trait as appropriate.
 
-The L<Stepford::Planner> class analyzes the dependencies and productions for
+The L<Stepford::Runner> class analyzes the dependencies and productions for
 each step to figure out what steps it needs to run in order to satisfy the
 dependencies of the final steps you specify.
 
 Each step can specify a C<last_run_time()> method (or get one from the
-L<StepFord::Role::Step::FileGenerator> role). The planner uses this to skip
+L<StepFord::Role::Step::FileGenerator> role). The runner uses this to skip
 steps that are up to date.
 
-See L<Stepford::Planner>, L<Stepford::Role::Step>, and
+See L<Stepford::Runner>, L<Stepford::Role::Step>, and
 L<StepFord::Role::Step::FileGenerator> for more details.
 
 =head1 CONCEPTS AND DESIGN
@@ -111,20 +111,20 @@ dependencies (and therefore productions) must be serializable data types (so
 no L<DBI> handles, etc.).
 
 A dependency is simply a value that a given step expects to get from another
-step (they can also be supplied to the planner manually).
+step (they can also be supplied to the runner manually).
 
 The flip side of a dependency is a production. This is a value that the step
 will generate as needed.
 
-Steps are run by a L<Stepford::Planner> object. To create this object, you
-give it a list of step namespaces and the class(es) of the final step(s) you
-want to run. The planner looks at the final steps' dependencies and uses this
+Steps are run by a L<Stepford::Runner> object. To create this object, you give
+it a list of step namespaces and the class(es) of the final step(s) you want
+to run. The runner looks at the final steps' dependencies and uses this
 information to figure out what other steps to run. It looks for steps with
 productions that satisfy these dependencies and adds any matching steps to the
 execution plan. It does this iteratively for each step it adds to the plan
 until the dependencies are satisfied for every step.
 
-The planner detects cyclic dependencies (A requires B requires C requires B)
+The runner detects cyclic dependencies (A requires B requires C requires B)
 and throws an error. It also detects when a step has a dependency that cannot
 be satisfied by the production of any other step.
 
@@ -134,7 +134,7 @@ that satisfies the dependency (in terms of the value's type, content, etc.).
 
 If multiple classes have a production of the same name, then the first class
 that Stepford sees "wins". This can be useful if you want to override a step
-for testing, for example. See the documentation of the L<Stepford::Planner>
+for testing, for example. See the documentation of the L<Stepford::Runner>
 class's C<new()> method for more details on step namespaces.
 
 It is not possible for a class to have an attribute that is simultaneously a
