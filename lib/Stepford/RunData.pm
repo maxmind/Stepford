@@ -151,3 +151,16 @@ sub record_productions {
 __PACKAGE__->meta()->make_immutable();
 
 1;
+
+# ABSTRACT: Contains data for a single run
+
+__END__
+
+=pod
+
+=for Pod::Coverage .*
+
+=head1 DESCRIPTION
+
+This class is only used by the L<Stepford::Planner> object and has no
+user-facing parts.
