@@ -2,7 +2,8 @@
 
 [BACKWARDS INCOMPATIBILITIES]
 
-- Renamed Stepford::Planner to Stepford::Runner.
+- Renamed Stepford::Planner to Stepford::Runner. The old class name will still
+  work, but you will get a warning every time you call Stepford::Planner->new.
 
 [ENHANCEMENTS]
 
