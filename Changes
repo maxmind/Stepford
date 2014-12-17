@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.003001 2014-12-17
+
 [BUG FIXES]
 
 - Remove use of Path::Class::File->copy_to method in a test, as this requires
