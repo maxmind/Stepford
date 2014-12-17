@@ -34,6 +34,7 @@ sub run { $_[0]->inner_steps_test_original_file()->touch() }
 
 package Test1::Step::BackupAFile;
 
+use File::Copy qw( copy );
 use Stepford::Types qw( Dir File );
 
 use Moose;
@@ -64,8 +65,10 @@ has inner_steps_test_backup_file => (
 sub run {
     my $self = shift;
 
-    $self->inner_steps_test_original_file()->copy_to(
-        $self->inner_steps_test_backup_file() );
+    copy(
+        $self->inner_steps_test_original_file(),
+        $self->inner_steps_test_backup_file()
+    );
 }
 
 __PACKAGE__->meta()->make_immutable();

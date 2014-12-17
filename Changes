@@ -1,5 +1,12 @@
 {{$NEXT}}
 
+[BUG FIXES]
+
+- Remove use of Path::Class::File->copy_to method in a test, as this requires
+  new(ish) version of Path::Class (0.33), but nothing else in this distro
+  would require a specific new version (that we know of).
+
+
 0.003000 2014-12-02
 
 [BACKWARDS INCOMPATIBILITIES]
