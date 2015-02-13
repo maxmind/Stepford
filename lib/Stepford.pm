@@ -31,7 +31,7 @@ my $log_object;
         default => '/path/to/file',
     );
 
-    with 'StepFord::Role::Step::FileGenerator';
+    with 'Stepford::Role::Step::FileGenerator';
 
     sub run {
         my $self = shift;
@@ -71,8 +71,8 @@ actual implementation is fairly different. Currently, there is no DSL, no
 Stepfile, etc.
 
 With Stepford, each step is represented by a class you create. That class
-should consume either the L<StepFord::Role::Step::FileGenerator> role (if it
-generates files) or the L<StepFord::Role::Step> step (if it doesn't).
+should consume either the L<Stepford::Role::Step::FileGenerator> role (if it
+generates files) or the L<Stepford::Role::Step> step (if it doesn't).
 
 Steps declare both their dependencies (required inputs) and productions
 (outputs) as attributes. These attributes should be given either the
@@ -83,11 +83,11 @@ each step to figure out what steps it needs to run in order to satisfy the
 dependencies of the final steps you specify.
 
 Each step can specify a C<last_run_time()> method (or get one from the
-L<StepFord::Role::Step::FileGenerator> role). The runner uses this to skip
+L<Stepford::Role::Step::FileGenerator> role). The runner uses this to skip
 steps that are up to date.
 
 See L<Stepford::Runner>, L<Stepford::Role::Step>, and
-L<StepFord::Role::Step::FileGenerator> for more details.
+L<Stepford::Role::Step::FileGenerator> for more details.
 
 =head1 CONCEPTS AND DESIGN
 
