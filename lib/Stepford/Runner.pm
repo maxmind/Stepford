@@ -16,6 +16,7 @@ use Stepford::Types qw(
     ArrayOfClassPrefixes ArrayOfSteps ClassName
     HashRef Logger PositiveInt Step
 );
+use Try::Tiny;
 
 use Moose;
 use MooseX::StrictConstructor;
@@ -115,11 +116,21 @@ sub _run_parallel {
     my $state = Stepford::Runner::State->new( logger => $self->logger() );
     $pm->run_on_finish(
         sub {
-            my ( $pid, $exit_code, $message ) = @_[ 0, 1, 5 ];
+            my ( $pid, $exit_code, $signal, $message ) = @_[ 0, 1, 3, 5 ];
 
             if ($exit_code) {
                 $pm->wait_all_children();
-                die "Child process $pid failed";
+                die "Child process $pid failed (exited with code $exit_code)";
+            }
+            elsif ( !$message ) {
+                $pm->wait_all_children();
+                my $error = "Child process $pid did not send back any data";
+                $error .= " (exited because of signal $signal)" if $signal;
+                die $error;
+            }
+            elsif ( $message->{error} ) {
+                $pm->wait_all_children();
+                die "Child process $pid died with error:\n$message->{error}";
             }
             else {
                 $state->record_run_time( $message->{last_run_time} );
@@ -151,14 +162,23 @@ sub _run_parallel {
                 next;
             }
 
-            $step->run();
-            $pm->finish(
-                0,
-                {
-                    last_run_time => scalar $step->last_run_time(),
-                    productions   => $step->productions_as_hashref(),
-                }
-            );
+            my $error;
+            try {
+                $step->run();
+            }
+            catch {
+                $error = $_;
+            };
+
+            my %message
+                = defined $error
+                ? ( error => $error )
+                : (
+                last_run_time => scalar $step->last_run_time(),
+                productions   => $step->productions_as_hashref(),
+                );
+
+            $pm->finish( 0, \%message );
         }
 
         $self->logger()->debug('Waiting for children');
