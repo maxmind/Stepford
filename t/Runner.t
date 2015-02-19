@@ -120,9 +120,13 @@ my $tempdir = tempdir( CLEANUP => 1 );
         config      => { tempdir => $tempdir },
     );
 
-    like(
-        $messages[-3]{message},
-        qr/^\QLast run time for Test1::Step::CombineFiles is \E.+\QSkipping this step./,
+    ok(
+        (
+            grep {
+                $_->{message}
+                    =~ /^\QLast run time for Test1::Step::CombineFiles is \E.+\QSkipping this step./
+            } @messages
+        ),
         'logged a message when skipping a step'
     );
 
