@@ -1,5 +1,19 @@
 {{$NEXT}}
 
+[BACKWARDS INCOMPATIBILITIES]
+
+- When running in parallel, each step's run() method is executed in a
+  try/catch block. This should not affect your code unless you explicitly
+  checked $^S inside the run() method.
+
+[BUG FIXES]
+
+- When running in parallel, if the step dies, we pass the error back to the
+  parent process and do not execute any more steps. We also now explicitly
+  handle steps calling exit() internally, as well as step processes exiting
+  because of some sort of external signal.
+
+
 0.003001 2014-12-17
 
 [BUG FIXES]
