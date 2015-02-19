@@ -164,16 +164,16 @@ my $last3_file = "$tempdir/last3";
 }
 
 {
-    my $planner = Stepford::Runner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => 'Test::Step',
         logger          => $logger,
         jobs            => 2,
     );
 
     like(
-        exception { $planner->run( final_steps => 'Test::Step::Last1' ) },
+        exception { $runner->run( final_steps => 'Test::Step::Last1' ) },
         qr/Child process \d+ died with error:\nThis step dies on its own/,
-        'planner aborted run because child process died'
+        'runner aborted run because child process died'
     );
 
     ok(
@@ -183,16 +183,16 @@ my $last3_file = "$tempdir/last3";
 }
 
 {
-    my $planner = Stepford::Runner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => 'Test::Step',
         logger          => $logger,
         jobs            => 2,
     );
 
     like(
-        exception { $planner->run( final_steps => 'Test::Step::Last2' ) },
+        exception { $runner->run( final_steps => 'Test::Step::Last2' ) },
         qr/Child process \d+ did not send back any data \(exited because of signal 9\)/,
-        'planner aborted run because child process exited through a signal'
+        'runner aborted run because child process exited through a signal'
     );
 
     ok(
@@ -202,16 +202,16 @@ my $last3_file = "$tempdir/last3";
 }
 
 {
-    my $planner = Stepford::Runner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => 'Test::Step',
         logger          => $logger,
         jobs            => 2,
     );
 
     like(
-        exception { $planner->run( final_steps => 'Test::Step::Last3' ) },
+        exception { $runner->run( final_steps => 'Test::Step::Last3' ) },
         qr/Child process \d+ failed \(exited with code 42\)/,
-        'planner aborted run because child process exited by calling exit()'
+        'runner aborted run because child process exited by calling exit()'
     );
 
     ok(

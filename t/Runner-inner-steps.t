@@ -18,14 +18,14 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 {
 
     # adding the step group namespace will load any nested step classes
-    my $planner = Stepford::Runner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => [
             'Test1::StepGroup',
             'Test1::Step',
         ],
     );
 
-    $planner->run(
+    $runner->run(
         final_steps => 'Test1::Step::BackupAFile',
         config      => {
             tempdir => $tempdir,

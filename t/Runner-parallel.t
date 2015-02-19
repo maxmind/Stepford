@@ -13,12 +13,12 @@ use Test::More;
 my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 
 {
-    my $planner = Stepford::Runner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => 'Test1::Step',
         jobs            => 3,
     );
 
-    $planner->run(
+    $runner->run(
         final_steps => 'Test1::Step::CombineFiles',
         config      => {
             tempdir => $tempdir,

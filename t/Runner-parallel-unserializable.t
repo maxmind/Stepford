@@ -69,19 +69,19 @@ my $file2 = $tempdir->file('file2');
 }
 
 {
-    my $planner = Stepford::Runner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => 'Test::Step',
         jobs            => 2,
     );
 
     is(
         exception {
-            $planner->run(
+            $runner->run(
                 final_steps => 'Test::Step::B',
             );
         },
         undef,
-        'no exception running parallel planner to produce Test::Step::B',
+        'no exception running parallel runner to produce Test::Step::B',
     );
 
     is(

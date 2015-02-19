@@ -31,13 +31,13 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
     require Test1::Step::CombineFiles;
 
-    my $planner = Stepford::Runner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => 'Test1::Step',
         logger          => $logger,
     );
 
     _test_plan(
-        $planner,
+        $runner,
         'Test1::Step',
         ['CombineFiles'],
         [
@@ -45,12 +45,12 @@ my $tempdir = tempdir( CLEANUP => 1 );
             ['UpdateFiles'],
             ['CombineFiles'],
         ],
-        'planner comes up with the right plan for simple steps'
+        'runner comes up with the right plan for simple steps'
     );
 
     @messages = ();
 
-    $planner->run(
+    $runner->run(
         final_steps => 'Test1::Step::CombineFiles',
         config      => { tempdir => $tempdir },
     );
@@ -115,7 +115,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
     @messages = ();
 
-    $planner->run(
+    $runner->run(
         final_steps => 'Test1::Step::CombineFiles',
         config      => { tempdir => $tempdir },
     );
@@ -236,12 +236,12 @@ my $tempdir = tempdir( CLEANUP => 1 );
 }
 
 {
-    my $planner = Stepford::Runner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => 'Test2::Step',
     );
 
     _test_plan(
-        $planner,
+        $runner,
         'Test2::Step',
         'D',
         [
@@ -250,7 +250,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
             ['C'],
             ['D'],
         ],
-        'planner does not include a given step more than once in a plan'
+        'runner does not include a given step more than once in a plan'
     );
 }
 
@@ -347,7 +347,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
               \QCannot resolve a dependency for Test4::Step::A. \E
               \QThere is no step that produces the thing_b attribute.\E
           /x,
-        'unresolved dependencies cause the planner constructor to die'
+        'unresolved dependencies cause the runner constructor to die'
     );
 }
 
@@ -452,11 +452,11 @@ my $tempdir = tempdir( CLEANUP => 1 );
 }
 
 {
-    my $planner = Stepford::Runner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => 'Test7::Step',
     );
 
-    $planner->run(
+    $runner->run(
         final_steps => 'Test7::Step::A',
         config      => {
             content => 'new content',
@@ -467,7 +467,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
     is(
         scalar $tempdir->file('test7-step-a')->slurp(),
         'new content',
-        'config passed to $planner->run() is passed to step constructor'
+        'config passed to $runner->run() is passed to step constructor'
     );
 }
 
@@ -617,12 +617,12 @@ my $tempdir = tempdir( CLEANUP => 1 );
 }
 
 {
-    my $planner = Stepford::Runner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => 'Test8::Step',
     );
 
     _test_plan(
-        $planner,
+        $runner,
         'Test8::Step',
         [ 'Final1', 'Final2' ],
         [
@@ -632,7 +632,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
             [ 'Final1',       'ForFinal2::B' ],
             ['Final2'],
         ],
-        'planner comes up with an optimized plan for multiple final steps'
+        'runner comes up with an optimized plan for multiple final steps'
     );
 }
 
@@ -669,7 +669,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 done_testing();
 
 sub _test_plan {
-    my $planner     = shift;
+    my $runner     = shift;
     my $prefix      = shift;
     my $final_steps = shift;
     my $expect      = shift;
@@ -682,7 +682,7 @@ sub _test_plan {
     ];
 
     # The final steps for the plan are the last steps in the $expect arrayref.
-    my @got = $planner->_make_plan(
+    my @got = $runner->_make_plan(
         [
             map { _prefix( $prefix, $_ ) }
                 ref $final_steps ? @{$final_steps} : $final_steps

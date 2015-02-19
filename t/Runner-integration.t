@@ -48,11 +48,11 @@ sub _run_combine_files {
     my $jobs    = shift;
     my $tempdir = shift;
 
-    my $planner = Stepford::Runner->new(
+    my $runner = Stepford::Runner->new(
         step_namespaces => 'Test1::Step',
         jobs            => $jobs,
     );
-    $planner->run(
+    $runner->run(
         final_steps => 'Test1::Step::CombineFiles',
         config      => {
             tempdir => $tempdir,

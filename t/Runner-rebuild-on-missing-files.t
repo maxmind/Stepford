@@ -26,8 +26,8 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 done_testing();
 
 sub _run_combine_files {
-    my $planner = Stepford::Runner->new( step_namespaces => 'Test1::Step', );
-    $planner->run(
+    my $runner = Stepford::Runner->new( step_namespaces => 'Test1::Step', );
+    $runner->run(
         final_steps => 'Test1::Step::CombineFiles',
         config      => {
             tempdir => $tempdir,
