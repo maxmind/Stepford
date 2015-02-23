@@ -172,7 +172,7 @@ sub _run_parallel {
 
             my %message
                 = defined $error
-                ? ( error => $error )
+                ? ( error => $error . q{} )
                 : (
                 last_run_time => scalar $step->last_run_time(),
                 productions   => $step->productions_as_hashref(),
