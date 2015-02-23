@@ -8,10 +8,11 @@
 
 [BUG FIXES]
 
-- When running in parallel, if the step dies, we pass the error back to the
-  parent process and do not execute any more steps. We also now explicitly
+- When running in parallel, if the step dies, we now pass the error back to
+  the parent process and do not execute any more steps. We also now explicitly
   handle steps calling exit() internally, as well as step processes exiting
-  because of some sort of external signal.
+  because of some sort of external signal. Previously a child step could die
+  and the build would simply continue on.
 
 - Steps classes which consumed the Stepford::Role::Step::FileGenerator::Atomic
   role would throw an error if their run() method did not produce a pre-commit
