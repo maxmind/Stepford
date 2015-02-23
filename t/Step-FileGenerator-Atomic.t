@@ -159,4 +159,56 @@ my $logger
     );
 }
 
+{
+    package AtomicFileGeneratorTest::PostCommitExists;
+
+    use Moose;
+    use Stepford::Types qw( Bool File );
+
+    with 'Stepford::Role::Step::FileGenerator::Atomic';
+
+    has a_file => (
+        traits => ['StepProduction'],
+        is     => 'ro',
+        isa    => File,
+    );
+
+    my $x = 0;
+    sub run {
+        my $self = shift;
+
+        return if -f $self->a_file();
+
+        $self->pre_commit_file()->spew(__PACKAGE__ . ' - ' . $x++);
+    }
+}
+
+{
+    my $post_commit = $tempdir->file('post-commit-exists-is-ok');
+    my $step        = AtomicFileGeneratorTest::PostCommitExists->new(
+        a_file => $post_commit,
+        logger => $logger,
+    );
+
+    $step->run();
+
+    is(
+        $post_commit->slurp(),
+        'AtomicFileGeneratorTest::PostCommitExists - 0',
+        'post commit file has expected content after first run'
+    );
+
+    is(
+        exception { $step->run() },
+        undef,
+        'no exception running step a second time'
+    );
+
+    is(
+        $post_commit->slurp(),
+        'AtomicFileGeneratorTest::PostCommitExists - 0',
+        'post commit file has expected content after second run'
+    );
+}
+
 done_testing();

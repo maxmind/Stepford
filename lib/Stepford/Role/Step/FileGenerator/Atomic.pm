@@ -54,15 +54,19 @@ around run => sub {
 
     $self->$orig(@_);
 
+    my $read_method = ( $self->productions() )[0]->get_read_method();
+    my $post_commit = $self->$read_method();
+
+    # The step's run() method may decide to simply not do anything if the
+    # post-commit file already exists, and that's ok.
+    return if -f $post_commit;
+
     croak 'The '
         . ( ref $self )
         . ' class consumed the Stepford::Role::Step::FileGenerator::Atomic'
         . ' role but run() produced no pre-commit production file at:'
         . " $pre_commit"
         unless -f $pre_commit;
-
-    my $read_method = ( $self->productions() )[0]->get_read_method();
-    my $post_commit = $self->$read_method();
 
     rename( $pre_commit, $post_commit )
         or croak "Failed renaming $pre_commit -> $post_commit: $!";
