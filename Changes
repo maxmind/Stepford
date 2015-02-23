@@ -13,6 +13,12 @@
   handle steps calling exit() internally, as well as step processes exiting
   because of some sort of external signal.
 
+[ENHANCEMENTS]
+
+- Added more logging around the checks for whether a step needs to be re-run
+  based on last run time. This will make debugging unnecessary rebuilds much
+  simpler.
+
 
 0.003001 2014-12-17
 
