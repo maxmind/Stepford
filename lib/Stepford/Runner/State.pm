@@ -111,17 +111,42 @@ sub step_is_up_to_date {
 
     my $step_last_run_time = $step->last_run_time();
 
+    my $class = blessed $step;
     if (   defined $previous_steps_last_run_time
         && defined $step_last_run_time
         && $step_last_run_time >= $previous_steps_last_run_time ) {
 
-        my $class = blessed $step;
         $self->logger()
             ->info( "Last run time for $class is $step_last_run_time."
                 . " Previous steps last run time is $previous_steps_last_run_time."
                 . ' Skipping this step.' );
 
         return 1;
+    }
+
+    if (   defined $previous_steps_last_run_time
+        && defined $step_last_run_time ) {
+        $self->logger()
+            ->debug( "Last run time for $class is $step_last_run_time."
+                . " Previous steps last run time is $previous_steps_last_run_time."
+                . ' Running this step.' );
+    }
+    elsif ( defined $previous_steps_last_run_time
+        && !defined $step_last_run_time ) {
+        $self->logger()
+            ->debug("No last run time for $class. Running this step.");
+    }
+    elsif ( !defined $previous_steps_last_run_time
+        && defined $step_last_run_time ) {
+        $self->logger()
+            ->debug(
+            'No last run time for the previous steps. Running this step.');
+    }
+    else {
+        $self->logger()
+            ->debug(
+            "No last run time for $class or the previous steps. Running this step."
+            );
     }
 
     return 0;
