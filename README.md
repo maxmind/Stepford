@@ -4,7 +4,7 @@ Stepford - A vaguely Rake/Make/Cake-like thing for Perl - create steps and let a
 
 # VERSION
 
-version 0.003001
+version 0.003002
 
 # SYNOPSIS
 
@@ -25,7 +25,7 @@ version 0.003001
         default => '/path/to/file',
     );
 
-    with 'StepFord::Role::Step::FileGenerator';
+    with 'Stepford::Role::Step::FileGenerator';
 
     sub run {
         my $self = shift;
@@ -65,8 +65,8 @@ actual implementation is fairly different. Currently, there is no DSL, no
 Stepfile, etc.
 
 With Stepford, each step is represented by a class you create. That class
-should consume either the [StepFord::Role::Step::FileGenerator](https://metacpan.org/pod/StepFord::Role::Step::FileGenerator) role (if it
-generates files) or the [StepFord::Role::Step](https://metacpan.org/pod/StepFord::Role::Step) step (if it doesn't).
+should consume either the [Stepford::Role::Step::FileGenerator](https://metacpan.org/pod/Stepford::Role::Step::FileGenerator) role (if it
+generates files) or the [Stepford::Role::Step](https://metacpan.org/pod/Stepford::Role::Step) step (if it doesn't).
 
 Steps declare both their dependencies (required inputs) and productions
 (outputs) as attributes. These attributes should be given either the
@@ -77,11 +77,11 @@ each step to figure out what steps it needs to run in order to satisfy the
 dependencies of the final steps you specify.
 
 Each step can specify a `last_run_time()` method (or get one from the
-[StepFord::Role::Step::FileGenerator](https://metacpan.org/pod/StepFord::Role::Step::FileGenerator) role). The runner uses this to skip
+[Stepford::Role::Step::FileGenerator](https://metacpan.org/pod/Stepford::Role::Step::FileGenerator) role). The runner uses this to skip
 steps that are up to date.
 
 See [Stepford::Runner](https://metacpan.org/pod/Stepford::Runner), [Stepford::Role::Step](https://metacpan.org/pod/Stepford::Role::Step), and
-[StepFord::Role::Step::FileGenerator](https://metacpan.org/pod/StepFord::Role::Step::FileGenerator) for more details.
+[Stepford::Role::Step::FileGenerator](https://metacpan.org/pod/Stepford::Role::Step::FileGenerator) for more details.
 
 # CONCEPTS AND DESIGN
 
@@ -171,7 +171,7 @@ Dave Rolsky <drolsky@maxmind.com>
 
 # COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2014 by MaxMind, Inc..
+This software is copyright (c) 2015 by MaxMind, Inc..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
