@@ -13,7 +13,6 @@ my $logger
     = Log::Dispatch->new( outputs => [ [ Null => min_level => 'emerg' ] ] );
 
 {
-
     package AtomicFileGeneratorTest::TooManyFilesStep;
 
     use Moose;
@@ -48,7 +47,6 @@ my $logger
 }
 
 {
-
     package AtomicFileGeneratorTest::NoWrittenFileStep;
 
     use Moose;
@@ -127,7 +125,6 @@ my $logger
         'pre_commit_file and final file are in the same directory'
     );
 
-
     $step_that_lives->run();
     is(
         $file->slurp(),
@@ -163,4 +160,3 @@ my $logger
 }
 
 done_testing();
-
