@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+- The fix for Atomic file generator steps in the last release introduced a new
+  bug. If the pre-commit and post-commit files both existed, the pre-commit
+  file would just be ignored. We want to use the pre-commit file whenever one
+  is generated.
+
+
 0.003002 2015-02-23
 
 [BACKWARDS INCOMPATIBILITIES]

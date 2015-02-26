@@ -177,7 +177,7 @@ my $logger
     sub run {
         my $self = shift;
 
-        return if -f $self->a_file();
+        return if -f $self->a_file() && $self->a_file() !~ /regenerate/;
 
         $self->pre_commit_file()->spew(__PACKAGE__ . ' - ' . $x++);
     }
@@ -208,6 +208,34 @@ my $logger
         $post_commit->slurp(),
         'AtomicFileGeneratorTest::PostCommitExists - 0',
         'post commit file has expected content after second run'
+    );
+}
+
+{
+    my $post_commit = $tempdir->file('should-regenerate');
+    my $step        = AtomicFileGeneratorTest::PostCommitExists->new(
+        a_file => $post_commit,
+        logger => $logger,
+    );
+
+    $step->run();
+
+    is(
+        $post_commit->slurp(),
+        'AtomicFileGeneratorTest::PostCommitExists - 1',
+        'post commit file has expected content after first run'
+    );
+
+    is(
+        exception { $step->run() },
+        undef,
+        'no exception running step a second time'
+    );
+
+    is(
+        $post_commit->slurp(),
+        'AtomicFileGeneratorTest::PostCommitExists - 2',
+        'pre commit file is used even when post commit file exists'
     );
 }
 

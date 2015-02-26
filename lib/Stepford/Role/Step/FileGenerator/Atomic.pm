@@ -59,7 +59,7 @@ around run => sub {
 
     # The step's run() method may decide to simply not do anything if the
     # post-commit file already exists, and that's ok.
-    return if -f $post_commit;
+    return if -f $post_commit && ! -f $pre_commit;
 
     croak 'The '
         . ( ref $self )
@@ -68,6 +68,7 @@ around run => sub {
         . " $pre_commit"
         unless -f $pre_commit;
 
+    $self->logger()->debug("Renaming $pre_commit to $post_commit");
     rename( $pre_commit, $post_commit )
         or croak "Failed renaming $pre_commit -> $post_commit: $!";
 };
