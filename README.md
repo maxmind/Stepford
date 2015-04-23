@@ -4,7 +4,7 @@ Stepford - A vaguely Rake/Make/Cake-like thing for Perl - create steps and let a
 
 # VERSION
 
-version 0.003003
+version 0.003004
 
 # SYNOPSIS
 
@@ -65,8 +65,19 @@ actual implementation is fairly different. Currently, there is no DSL, no
 Stepfile, etc.
 
 With Stepford, each step is represented by a class you create. That class
-should consume either the [Stepford::Role::Step::FileGenerator](https://metacpan.org/pod/Stepford::Role::Step::FileGenerator) role (if it
-generates files) or the [Stepford::Role::Step](https://metacpan.org/pod/Stepford::Role::Step) step (if it doesn't).
+should consume one of the available Step roles. Those are:
+
+- [Stepford::Role::Step::FileGenerator](https://metacpan.org/pod/Stepford::Role::Step::FileGenerator)
+
+    For steps that generate files.
+
+- [Stepford::Role::Step](https://metacpan.org/pod/Stepford::Role::Step)
+
+    For steps that _don't_ generate files.
+
+- [Stepford::Role::Step::FileGenerator](https://metacpan.org/pod/Stepford::Role::Step::FileGenerator)
+
+    For a step that wants to generate a single file atomically.
 
 Steps declare both their dependencies (required inputs) and productions
 (outputs) as attributes. These attributes should be given either the
@@ -81,7 +92,8 @@ Each step can specify a `last_run_time()` method (or get one from the
 steps that are up to date.
 
 See [Stepford::Runner](https://metacpan.org/pod/Stepford::Runner), [Stepford::Role::Step](https://metacpan.org/pod/Stepford::Role::Step), and
-[Stepford::Role::Step::FileGenerator](https://metacpan.org/pod/Stepford::Role::Step::FileGenerator) for more details.
+[Stepford::Role::Step::FileGenerator](https://metacpan.org/pod/Stepford::Role::Step::FileGenerator), and
+[Stepford::Role::Step::FileGenerator::Atomic](https://metacpan.org/pod/Stepford::Role::Step::FileGenerator::Atomic) for more details.
 
 # CONCEPTS AND DESIGN
 
