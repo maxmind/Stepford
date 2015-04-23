@@ -19,7 +19,7 @@ override new => sub {
 
 1;
 
-# ABSTRACT: Renamed to Stepford;:Runner
+# ABSTRACT: Renamed to Stepford::Runner
 
 __END__
 
