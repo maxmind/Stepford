@@ -2,6 +2,7 @@ package Stepford::Planner;
 
 use strict;
 use warnings;
+use namespace::autoclean;
 
 our $VERSION = '0.003004';
 
