@@ -8,6 +8,7 @@ our $VERSION = '0.003004';
 
 use Moose::Role;
 
+## no critic (Subroutines::ProhibitQualifiedSubDeclarations)
 sub Moose::Meta::Attribute::Custom::Trait::StepProduction::register_implementation
 {
     return __PACKAGE__;

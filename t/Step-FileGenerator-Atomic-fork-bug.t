@@ -82,9 +82,9 @@ my $logger
 done_testing();
 
 sub _run_child {
-    my $pm   = shift;
+    my $pm          = shift;
     my $signal_file = shift;
-    my $step = shift;
+    my $step        = shift;
 
     my $x = 0;
     until ( -f $signal_file || $x == 10 ) {

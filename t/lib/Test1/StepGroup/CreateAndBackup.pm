@@ -31,7 +31,6 @@ has inner_steps_test_original_file => (
 
 sub run { $_[0]->inner_steps_test_original_file()->touch() }
 
-
 package Test1::Step::BackupAFile;
 
 use File::Copy qw( copy );

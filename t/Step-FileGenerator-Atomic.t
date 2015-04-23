@@ -174,12 +174,13 @@ my $logger
     );
 
     my $x = 0;
+
     sub run {
         my $self = shift;
 
         return if -f $self->a_file() && $self->a_file() !~ /regenerate/;
 
-        $self->pre_commit_file()->spew(__PACKAGE__ . ' - ' . $x++);
+        $self->pre_commit_file()->spew( __PACKAGE__ . ' - ' . $x++ );
     }
 }
 

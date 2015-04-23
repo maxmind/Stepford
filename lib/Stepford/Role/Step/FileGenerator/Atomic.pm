@@ -42,7 +42,7 @@ sub _build_pre_commit_file {
     my $self = shift;
 
     my $final_file = ( $self->productions() )[0];
-    my $reader = $final_file->get_read_method();
+    my $reader     = $final_file->get_read_method();
 
     return file( $self->$reader() . '.tmp' );
 }
@@ -61,7 +61,7 @@ around run => sub {
 
     # The step's run() method may decide to simply not do anything if the
     # post-commit file already exists, and that's ok.
-    return if -f $post_commit && ! -f $pre_commit;
+    return if -f $post_commit && !-f $pre_commit;
 
     croak 'The '
         . ( ref $self )

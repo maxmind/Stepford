@@ -41,6 +41,7 @@ sub last_run_time {
     my @production_files
         = map { $self->${ \( $_->get_read_method() ) } } $self->productions();
 
+    ## no critic (Subroutines::ProhibitExplicitReturnUndef)
     return undef if any { !-f } @production_files;
 
     my @times = map { ( stat $_ )[9] } @production_files;

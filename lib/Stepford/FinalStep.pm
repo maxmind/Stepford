@@ -13,6 +13,7 @@ with 'Stepford::Role::Step';
 
 # We always want this step to run
 sub last_run_time {
+    ## no critic (Subroutines::ProhibitExplicitReturnUndef)
     return undef;
 }
 

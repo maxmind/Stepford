@@ -98,13 +98,13 @@ my $tempdir = tempdir( CLEANUP => 1 );
     );
 
     is(
-       $object_constructor_messages[0]{message},
+        $object_constructor_messages[0]{message},
         'Test1::Step::CreateA1->new()',
         'logged a message indicating that a step was being created'
     );
 
     is(
-       $object_constructor_messages[0]{level},
+        $object_constructor_messages[0]{level},
         'debug',
         'log level for object creation is debug'
     );
@@ -307,7 +307,6 @@ my $tempdir = tempdir( CLEANUP => 1 );
             final_steps => 'Test3::Step::B',
             );
     };
-
 
     like(
         $e,
@@ -673,7 +672,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 done_testing();
 
 sub _test_plan {
-    my $runner     = shift;
+    my $runner      = shift;
     my $prefix      = shift;
     my $final_steps = shift;
     my $expect      = shift;

@@ -21,7 +21,7 @@ my $logger = Log::Dispatch->new(
     ],
 );
 
-my $tempdir = tempdir( CLEANUP => 1 );
+my $tempdir    = tempdir( CLEANUP => 1 );
 my $last1_file = "$tempdir/last1";
 my $last2_file = "$tempdir/last2";
 my $last3_file = "$tempdir/last3";
@@ -78,8 +78,8 @@ my $last3_file = "$tempdir/last3";
     sub last_run_time { undef }
 
     sub run {
-        open my $fh, '>', $last1_file or die $1;
-        close $fh;
+        open my $fh, '>', $last1_file or die $!;
+        close $fh or die $!;
     }
 }
 
@@ -101,7 +101,7 @@ my $last3_file = "$tempdir/last3";
     sub last_run_time { undef }
 
     sub run {
-        kill 9, $$;
+        kill 9, $$ or die 'doh, so broken';
     }
 }
 

@@ -8,6 +8,7 @@ our $VERSION = '0.003004';
 
 use Forest::Tree;
 use List::AllUtils qw( all uniq );
+use Stepford::Error;
 use Stepford::FinalStep;
 use Stepford::Types qw( ArrayRef ArrayOfSteps ClassName HashRef Logger Step );
 
@@ -67,8 +68,8 @@ sub _build_step_sets {
         my @leaves;
         $tree->traverse(
             sub {
-                my $tree = shift;
-                push @leaves, $tree if $tree->is_leaf();
+                my $node = shift;
+                push @leaves, $node if $node->is_leaf();
             }
         );
 
@@ -146,6 +147,7 @@ sub _check_tree_for_cycle {
     my $tree = shift;
     my $step = shift;
 
+    ## no critic (ControlStructures::ProhibitCStyleForLoops)
     for ( my $cur = $tree ; $cur ; $cur = $cur->parent() ) {
         Stepford::Error->throw(
             "The set of dependencies for $step is cyclical")
