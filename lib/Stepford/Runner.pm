@@ -332,7 +332,7 @@ The order of the step namespaces I<is> relevant. If more than one step has a
 production of the same name, then the first step "wins". Stepford sorts step
 class names based on the order of the namespaces provided to the constructor,
 and then the full name of the class. You can take advantage of this feature to
-provide different steps in a different environments (for example, for testing).
+provide different steps in different environments (for example, for testing).
 
 The runner object assumes that every B<class> it finds in a step namespace is
 a step. Specifically, if it finds a package that is a subclass of

@@ -71,8 +71,23 @@ actual implementation is fairly different. Currently, there is no DSL, no
 Stepfile, etc.
 
 With Stepford, each step is represented by a class you create. That class
-should consume either the L<Stepford::Role::Step::FileGenerator> role (if it
-generates files) or the L<Stepford::Role::Step> step (if it doesn't).
+should consume one of the available Step roles. Those are:
+
+=over 4
+
+=item * L<Stepford::Role::Step::FileGenerator>
+
+For steps that generate files.
+
+=item * L<Stepford::Role::Step>
+
+For steps that I<don't> generate files.
+
+=item * L<Stepford::Role::Step::FileGenerator>
+
+For a step that wants to generate a single file atomically.
+
+=back
 
 Steps declare both their dependencies (required inputs) and productions
 (outputs) as attributes. These attributes should be given either the
@@ -87,7 +102,8 @@ L<Stepford::Role::Step::FileGenerator> role). The runner uses this to skip
 steps that are up to date.
 
 See L<Stepford::Runner>, L<Stepford::Role::Step>, and
-L<Stepford::Role::Step::FileGenerator> for more details.
+L<Stepford::Role::Step::FileGenerator>, and
+L<Stepford::Role::Step::FileGenerator::Atomic> for more details.
 
 =head1 CONCEPTS AND DESIGN
 
