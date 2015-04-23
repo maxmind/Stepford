@@ -3,6 +3,8 @@ package Stepford;
 use strict;
 use warnings;
 
+our $VERSION = '0.003004';
+
 1;
 
 # ABSTRACT: A vaguely Rake/Make/Cake-like thing for Perl - create steps and let a runner run them

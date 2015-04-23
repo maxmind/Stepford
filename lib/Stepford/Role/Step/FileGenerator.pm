@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
+our $VERSION = '0.003004';
+
 use Carp qw( croak );
 use List::AllUtils qw( any max );
 use Stepford::Types qw( File );

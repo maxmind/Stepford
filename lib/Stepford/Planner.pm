@@ -3,6 +3,8 @@ package Stepford::Planner;
 use strict;
 use warnings;
 
+our $VERSION = '0.003004';
+
 use Carp qw( carp );
 
 use Moose;

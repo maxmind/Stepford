@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
+our $VERSION = '0.003004';
+
 use List::AllUtils qw( first max );
 use Module::Pluggable::Object;
 use MooseX::Params::Validate qw( validated_list );

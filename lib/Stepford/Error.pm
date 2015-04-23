@@ -3,6 +3,8 @@ package Stepford::Error;
 use strict;
 use warnings;
 
+our $VERSION = '0.003004';
+
 use Moose;
 
 extends 'Throwable::Error';

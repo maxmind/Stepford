@@ -3,6 +3,8 @@ package Stepford::Types;
 use strict;
 use warnings;
 
+our $VERSION = '0.003004';
+
 use MooseX::Types::Common::Numeric;
 use MooseX::Types::Moose;
 use MooseX::Types::Path::Class;

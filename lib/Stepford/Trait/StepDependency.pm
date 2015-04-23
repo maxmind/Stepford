@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
+our $VERSION = '0.003004';
+
 use Moose::Role;
 
 sub Moose::Meta::Attribute::Custom::Trait::StepDependency::register_implementation

@@ -3,6 +3,8 @@ package Stepford::LoggerWithMoniker;
 use strict;
 use warnings;
 
+our $VERSION = '0.003004';
+
 use Stepford::Types qw( Logger Str );
 
 use Moose;
