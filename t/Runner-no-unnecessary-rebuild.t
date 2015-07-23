@@ -13,6 +13,24 @@ my $file1 = $dir->file('file1');
 my $file2 = $dir->file('file2');
 my $file3 = $dir->file('file3');
 
+# How this test works:
+#
+#   Step 1: Just creates 'file1' on disk
+#   Step 2: Dependant on Step 1, create 'file2' on disk with the contents of 'file1'
+#   Step 3: Dependant on Step 2, create 'file3' on disk with the contents of 'file2'
+#
+#  The first time through we run step 3 that creates all the files
+#  
+#  The second time through we run things but since the files haven't changed
+#  the steps aren't re-run
+
+#  The third time through we remove 'file1' before running things.  This causes
+#  last_run_time of that step to return "undef", which means it will
+#  unconditionally run.
+#
+#  The fourth time through we touch 'file2' before running things.  Because
+#  the dependency has been altered everything is re-run again!
+
 my $iteration = 1;
 
 {
