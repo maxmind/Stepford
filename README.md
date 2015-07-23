@@ -178,6 +178,7 @@ Dave Rolsky <drolsky@maxmind.com>
 # CONTRIBUTORS
 
 - Greg Oschwald <goschwald@maxmind.com>
+- Mark Fowler <mfowler@maxmind.com>
 - Olaf Alders <oalders@maxmind.com>
 - Ran Eilam <reilam@maxmind.com>
 
