@@ -165,9 +165,8 @@ EOF
             . ' content does change when file1 is regenerated on third run'
     );
 
-    sleep 0.01;
-    $file2->touch();
-
+    touch($file2);
+  
     $runner->run(
         final_steps => 'Test::Step::Step3',
     );
@@ -187,3 +186,34 @@ EOF
 }
 
 done_testing();
+
+########################################################################
+
+sub touch {
+    my $file = shift;
+
+    # the simple case, where the file system has sub-second modification times
+    my $mtime = $file->stat->mtime;
+    sleep 0.01;
+    $file->touch;
+    return if $mtime != $file->stat->mtime;
+
+    # in *theory* we could use utime here to do things, but that comes with
+    # its own portability issues when I looked into it
+
+    # okay, some systems (e.g. OSX's HFS+, various Windows file systems)
+    # may have one to two second resoluton times. Wait until that's updated 
+    foreach (1..(2/0.01)) {
+        sleep 0.01;
+        $file->touch;
+        return if $mtime != $file->stat->mtime;
+    }
+
+    # pathalogical case here, where the stat times aren't updating at all.
+    # This typically happens with something like NFS with stat caching
+    # enabled.  Rather than touching the file, let's try re-writing it
+    $file->spew($file->slurp);
+    return if $mtime != $file->stat->mtime;
+
+    die "Can't update modification time of $file";
+}
