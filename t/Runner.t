@@ -52,7 +52,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
     $runner->run(
         final_steps => 'Test1::Step::CombineFiles',
-        config      => { tempdir => $tempdir },
+        config => { tempdir => $tempdir },
     );
 
     my @dep_messages = grep {
@@ -117,7 +117,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
     $runner->run(
         final_steps => 'Test1::Step::CombineFiles',
-        config      => { tempdir => $tempdir },
+        config => { tempdir => $tempdir },
     );
 
     ok(

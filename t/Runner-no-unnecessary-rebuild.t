@@ -12,6 +12,25 @@ my $dir   = tempdir( CLEANUP => 1 );
 my $file1 = $dir->file('file1');
 my $file2 = $dir->file('file2');
 my $file3 = $dir->file('file3');
+my $wait  = $dir->file('wait');
+
+# How this test works:
+#
+#   Step 1: Just creates 'file1' on disk
+#   Step 2: Dependant on Step 1, create 'file2' on disk with the contents of 'file1'
+#   Step 3: Dependant on Step 2, create 'file3' on disk with the contents of 'file2'
+#
+#  The first time through we run step 3 that creates all the files
+#
+#  The second time through we run things but since the files haven't changed
+#  the steps aren't re-run
+
+#  The third time through we remove 'file1' before running things.  This causes
+#  last_run_time of that step to return "undef", which means it will
+#  unconditionally run.
+#
+#  The fourth time through we touch 'file2' before running things.  Because
+#  the dependency has been altered everything is re-run again!
 
 my $iteration = 1;
 
@@ -128,7 +147,20 @@ EOF
             . ' content does not change if file1 is not regenerated on second run'
     );
 
-    $file1->remove();
+    # The way this test is meant to work is that deleting file1 causes file2
+    # and file3 to be regenerated also because file1 is missing and will be
+    # regenerated causing it to have a new modification time.
+    #
+    # The use of $wait here is to make sure the file system is able to
+    # detect that file1 was re-written.  Because some file systems (e.g. HFS)
+    # have one-second granularity on their modification times then this test
+    # can fail as deleting file1 and then having file1 recreated within the
+    # same second as it was originally created means that when we get to step2
+    # we have the same timestamp and step2 is not run.
+
+    $wait->touch;
+    $file1->remove() or diag "Could not remove file1!\n";
+    touch_and_ensure_new_mtime($wait);
 
     $runner->run(
         final_steps => 'Test::Step::Step3',
@@ -147,8 +179,7 @@ EOF
             . ' content does change when file1 is regenerated on third run'
     );
 
-    sleep 0.01;
-    $file2->touch();
+    touch_and_ensure_new_mtime($file2);
 
     $runner->run(
         final_steps => 'Test::Step::Step3',
@@ -169,3 +200,34 @@ EOF
 }
 
 done_testing();
+
+########################################################################
+
+sub touch_and_ensure_new_mtime {
+    my $file = shift;
+
+    # the simple case, where the file system has sub-second modification times
+    my $mtime = $file->stat->mtime;
+    sleep 0.01;
+    $file->touch;
+    return if $mtime != $file->stat->mtime;
+
+    # in *theory* we could use utime here to do things, but that comes with
+    # its own portability issues when I looked into it
+
+    # okay, some systems (e.g. OSX's HFS+, various Windows file systems)
+    # may have one to two second resoluton times. Wait until that's updated
+    foreach ( 1 .. ( 2 / 0.01 ) ) {
+        sleep 0.01;
+        $file->touch;
+        return if $mtime != $file->stat->mtime;
+    }
+
+    # pathological case here, where the stat times aren't updating at all.
+    # This typically happens with something like NFS with stat caching
+    # enabled.  Rather than touching the file, let's try re-writing it
+    $file->spew( $file->slurp );
+    return if $mtime != $file->stat->mtime;
+
+    die "Can't update modification time of $file";
+}
