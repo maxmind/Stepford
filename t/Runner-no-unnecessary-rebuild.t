@@ -21,7 +21,7 @@ my $wait  = $dir->file('wait');
 #   Step 3: Dependant on Step 2, create 'file3' on disk with the contents of 'file2'
 #
 #  The first time through we run step 3 that creates all the files
-#  
+#
 #  The second time through we run things but since the files haven't changed
 #  the steps aren't re-run
 
@@ -179,8 +179,8 @@ EOF
             . ' content does change when file1 is regenerated on third run'
     );
 
-  
     touch_and_ensure_new_mtime($file2);
+
     $runner->run(
         final_steps => 'Test::Step::Step3',
     );
@@ -216,8 +216,8 @@ sub touch_and_ensure_new_mtime {
     # its own portability issues when I looked into it
 
     # okay, some systems (e.g. OSX's HFS+, various Windows file systems)
-    # may have one to two second resoluton times. Wait until that's updated 
-    foreach (1..(2/0.01)) {
+    # may have one to two second resoluton times. Wait until that's updated
+    foreach ( 1 .. ( 2 / 0.01 ) ) {
         sleep 0.01;
         $file->touch;
         return if $mtime != $file->stat->mtime;
@@ -226,7 +226,7 @@ sub touch_and_ensure_new_mtime {
     # pathological case here, where the stat times aren't updating at all.
     # This typically happens with something like NFS with stat caching
     # enabled.  Rather than touching the file, let's try re-writing it
-    $file->spew($file->slurp);
+    $file->spew( $file->slurp );
     return if $mtime != $file->stat->mtime;
 
     die "Can't update modification time of $file";
