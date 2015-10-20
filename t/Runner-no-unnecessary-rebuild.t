@@ -111,11 +111,6 @@ my $iteration = 1;
 {
     my $runner = Stepford::Runner->new(
         step_namespaces => 'Test::Step',
-        # logger          => Log::Dispatch->new(
-        #     outputs => [
-        #         [ 'TestNote', min_level => 'debug', ],
-        #     ],
-        # ),
     );
 
     $runner->run(
