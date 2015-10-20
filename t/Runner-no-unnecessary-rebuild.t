@@ -12,6 +12,7 @@ my $dir   = tempdir( CLEANUP => 1 );
 my $file1 = $dir->file('file1');
 my $file2 = $dir->file('file2');
 my $file3 = $dir->file('file3');
+my $wait  = $dir->file('wait');
 
 # How this test works:
 #
@@ -146,7 +147,20 @@ EOF
             . ' content does not change if file1 is not regenerated on second run'
     );
 
-    $file1->remove();
+    # The way this test is meant to work is that deleting file1 causes file2
+    # and file3 to be regenerated also because file1 is missing and will be
+    # regenerated causing it to have a new modification time.
+    #
+    # The use of $wait here is to make sure the file system is able to
+    # detect that file1 was re-written.  Because some file systems (e.g. HFS)
+    # have one-second granularity on their modification times then this test
+    # can fail as deleting file1 and then having file1 recreated within the
+    # same second as it was originally created means that when we get to step2
+    # we have the same timestamp and step2 is not run.
+
+    $wait->touch;
+    $file1->remove() or diag "Could not remove file1!\n";
+    touch_and_ensure_new_mtime($wait);
 
     $runner->run(
         final_steps => 'Test::Step::Step3',
@@ -165,8 +179,8 @@ EOF
             . ' content does change when file1 is regenerated on third run'
     );
 
-    touch($file2);
   
+    touch_and_ensure_new_mtime($file2);
     $runner->run(
         final_steps => 'Test::Step::Step3',
     );
@@ -189,7 +203,7 @@ done_testing();
 
 ########################################################################
 
-sub touch {
+sub touch_and_ensure_new_mtime {
     my $file = shift;
 
     # the simple case, where the file system has sub-second modification times
@@ -209,7 +223,7 @@ sub touch {
         return if $mtime != $file->stat->mtime;
     }
 
-    # pathalogical case here, where the stat times aren't updating at all.
+    # pathological case here, where the stat times aren't updating at all.
     # This typically happens with something like NFS with stat caching
     # enabled.  Rather than touching the file, let's try re-writing it
     $file->spew($file->slurp);
