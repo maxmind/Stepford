@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+- Updated some tests to work better on filesystems (e.g. OS X's HFS+) that
+  don't support sub-second accuracy on timestamps
+
+
 0.003003 2015-03-02
 
 - The fix for Atomic file generator steps in the last release introduced a new
