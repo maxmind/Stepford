@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.003004 2015-10-21
+
 - Updated some tests to work better on filesystems (e.g. OS X's HFS+) that
   don't support sub-second accuracy on timestamps
 
