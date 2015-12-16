@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.003005 2015-12-16
+
 - When running steps in parallel and a step in a child process dies, we now
   include the step class name in the error message, which makes diagnosing
   failures much easier.
