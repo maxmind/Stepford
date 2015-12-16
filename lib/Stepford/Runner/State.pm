@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.003005';
+our $VERSION = '0.003006';
 
 use List::AllUtils qw( max );
 use Stepford::Error;
