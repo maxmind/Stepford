@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+- When running steps in parallel and a step in a child process dies, we now
+  include the step class name in the error message, which makes diagnosing
+  failures much easier.
+
+
 0.003004 2015-10-21
 
 - Updated some tests to work better on filesystems (e.g. OS X's HFS+) that

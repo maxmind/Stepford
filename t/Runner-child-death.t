@@ -172,7 +172,7 @@ my $last3_file = "$tempdir/last3";
 
     like(
         exception { $runner->run( final_steps => 'Test::Step::Last1' ) },
-        qr/Child process \d+ died with error:\nThis step dies on its own/,
+        qr/Child process \d+ died while running step Test::Step::Dies with error:\nThis step dies on its own/,
         'runner aborted run because child process died'
     );
 
@@ -191,7 +191,7 @@ my $last3_file = "$tempdir/last3";
 
     like(
         exception { $runner->run( final_steps => 'Test::Step::Last2' ) },
-        qr/Child process \d+ did not send back any data \(exited because of signal 9\)/,
+        qr/Child process \d+ did not send back any data while running step Test::Step::KillsSelf \(exited because of signal 9\)/,
         'runner aborted run because child process exited through a signal'
     );
 
@@ -210,7 +210,7 @@ my $last3_file = "$tempdir/last3";
 
     like(
         exception { $runner->run( final_steps => 'Test::Step::Last3' ) },
-        qr/Child process \d+ failed \(exited with code 42\)/,
+        qr/Child process \d+ failed while running step Test::Step::Exits \(exited with code 42\)/,
         'runner aborted run because child process exited by calling exit()'
     );
 

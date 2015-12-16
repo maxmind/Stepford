@@ -118,21 +118,26 @@ sub _run_parallel {
     my $state = Stepford::Runner::State->new( logger => $self->logger() );
     $pm->run_on_finish(
         sub {
-            my ( $pid, $exit_code, $signal, $message ) = @_[ 0, 1, 3, 5 ];
+            my ( $pid, $exit_code, $step_name, $signal, $message )
+                = @_[ 0 .. 3, 5 ];
 
             if ($exit_code) {
                 $pm->wait_all_children();
-                die "Child process $pid failed (exited with code $exit_code)";
+                die "Child process $pid failed while running step $step_name"
+                    . " (exited with code $exit_code)";
             }
             elsif ( !$message ) {
                 $pm->wait_all_children();
                 my $error = "Child process $pid did not send back any data";
+                $error .= " while running step $step_name";
                 $error .= " (exited because of signal $signal)" if $signal;
                 die $error;
             }
             elsif ( $message->{error} ) {
                 $pm->wait_all_children();
-                die "Child process $pid died with error:\n$message->{error}";
+                die "Child process $pid died"
+                    . " while running step $step_name"
+                    . " with error:\n$message->{error}";
             }
             else {
                 $state->record_run_time( $message->{last_run_time} );
@@ -158,7 +163,7 @@ sub _run_parallel {
                 next;
             }
 
-            if ( my $pid = $pm->start() ) {
+            if ( my $pid = $pm->start($class) ) {
                 $self->logger()
                     ->debug("Forked child to run $class - pid $pid");
                 next;
