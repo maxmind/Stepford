@@ -85,7 +85,7 @@ For steps that generate files.
 
 For steps that I<don't> generate files.
 
-=item * L<Stepford::Role::Step::FileGenerator>
+=item * L<Stepford::Role::Step::FileGenerator::Atomic>
 
 For a step that wants to generate a single file atomically.
 
