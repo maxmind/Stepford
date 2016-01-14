@@ -1,19 +1,31 @@
+---
+sudo: false
+addons:
+  apt:
+    packages:
+      - aspell
+      - aspell-en
 language: perl
-
 perl:
-   - "blead"
-   - "5.20"
-   - "5.18"
-   - "5.16"
-   - "5.14"
-   - "5.12"
-   - "5.10"
-
+  - blead
+  - dev
+  - '5.22'
+  - '5.20'
+  - '5.18'
+  - '5.16'
+  - '5.14'
+  - '5.12'
+  - '5.10'
+matrix:
+  allow_failures:
+    - perl: blead
+  include:
+    - env: COVERAGE=1
+      perl: '5.22'
 env:
   global:
     - RELEASE_TESTING=1
     - AUTHOR_TESTING=1
-
 before_install:
   - git clone git://github.com/travis-perl/helpers ~/travis-perl-helpers
   - source ~/travis-perl-helpers/init
@@ -21,18 +33,18 @@ before_install:
   - perl -V
   - build-dist
   - cd $BUILD_DIR
-
 install:
   - cpan-install ExtUtils::MakeMaker~6.68 --deps
-
 script:
   - perl Makefile.PL
   - make
   - prove -br -j$(test-jobs) $(test-files)
-
 notifications:
   email:
+    on_failure: always
+    on_success: change
     recipients:
       - dev-ci@maxmind.com
-    on_success: change
-    on_failure: always
+  slack:
+    rooms:
+      secure: "G46gvTA2ipIhgknHy+4/jPel9borTlNgdl8cWML2qW/jPoCLRPNMOBZ/48J32lXDFMrKv6nM0Mfrxj9Y1GBw9CaqY6Mo2RZKr6/CIDgfXjEgcCAuST+0w89pCeVNWLSdPFlSJLmz+lX1A8vcc5cOZ2e0Jqp2ShB+KqQxPb35nto=\n"
