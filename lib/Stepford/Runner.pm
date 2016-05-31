@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.003006';
+our $VERSION = '0.003007';
 
 use List::AllUtils qw( first max );
 use Module::Pluggable::Object;
