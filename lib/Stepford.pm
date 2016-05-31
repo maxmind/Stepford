@@ -11,9 +11,6 @@ our $VERSION = '0.003006';
 
 __END__
 
-=for test_synopsis
-my $log_object;
-
 =head1 SYNOPSIS
 
     package My::Step::MakeSomething;
