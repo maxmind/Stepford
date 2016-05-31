@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+- Fixed warning that could occur from trying to inline the constructor for
+  Stepford::Error. Since this class subclasses a Moo class, this could cause
+  issues.
+
+
 0.003005 2015-12-16
 
 - When running steps in parallel and a step in a child process dies, we now
