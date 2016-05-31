@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.003006 2016-05-31
+
 - Fixed warning that could occur from trying to inline the constructor for
   Stepford::Error. Since this class subclasses a Moo class, this could cause
   issues.

@@ -4,7 +4,7 @@ Stepford - A vaguely Rake/Make/Cake-like thing for Perl - create steps and let a
 
 # VERSION
 
-version 0.003005
+version 0.003006
 
 # SYNOPSIS
 
@@ -75,7 +75,7 @@ should consume one of the available Step roles. Those are:
 
     For steps that _don't_ generate files.
 
-- [Stepford::Role::Step::FileGenerator](https://metacpan.org/pod/Stepford::Role::Step::FileGenerator)
+- [Stepford::Role::Step::FileGenerator::Atomic](https://metacpan.org/pod/Stepford::Role::Step::FileGenerator::Atomic)
 
     For a step that wants to generate a single file atomically.
 
@@ -184,7 +184,7 @@ Dave Rolsky <drolsky@maxmind.com>
 
 # COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2015 by MaxMind, Inc..
+This software is copyright (c) 2016 by MaxMind, Inc..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
