@@ -349,7 +349,7 @@ not Moose objects which aren't steps.
 
 =item * jobs
 
-This argument default to 1.
+This argument defaults to 1.
 
 The number of jobs to run at a time. By default, all steps are run
 sequentially. However, if you set this to a value greater than 1 then the
