@@ -30,7 +30,11 @@ my $wait  = $dir->file('wait');
 #  unconditionally run.
 #
 #  The fourth time through we touch 'file2' before running things.  Because
-#  the dependency has been altered everything is re-run again!
+#  the dependency has been altered the second and third step are re-run again,
+#  but the first step isn't re-run (because that hasn't changed.)
+
+#  The fifth time though we turn on force_step_execution when running things.
+#  We expect everything to be re-run because we explictly told it to
 
 my $iteration = 1;
 
@@ -196,6 +200,23 @@ EOF
         $expect,
         $file3->basename()
             . ' content does change when file3 is regenerated on fourth run'
+    );
+
+    $runner->run(
+        final_steps          => 'Test::Step::Step3',
+        force_step_execution => 1,
+    );
+
+    $expect = <<'EOF';
+Test::Step::Step1 - 2
+Test::Step::Step2 - 4
+Test::Step::Step3 - 4
+EOF
+
+    is(
+        scalar $file3->slurp(),
+        $expect,
+        'everything changes when we force_step_execution'
     );
 }
 
