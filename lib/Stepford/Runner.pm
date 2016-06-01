@@ -15,7 +15,7 @@ use Stepford::Error;
 use Stepford::Plan;
 use Stepford::Runner::State;
 use Stepford::Types qw(
-    ArrayOfClassPrefixes ArrayOfSteps ClassName
+    ArrayOfClassPrefixes ArrayOfSteps Bool ClassName
     HashRef Logger PositiveInt Step
 );
 use Try::Tiny;
@@ -68,7 +68,7 @@ sub BUILD {
 
 sub run {
     my $self = shift;
-    my ( $final_steps, $config ) = validated_list(
+    my ( $final_steps, $config, $force_step_execution ) = validated_list(
         \@_,
         final_steps => {
             isa    => ArrayOfSteps,
@@ -78,26 +78,34 @@ sub run {
             isa     => HashRef,
             default => {},
         },
+        force_step_execution => {
+            isa     => Bool,
+            default => 0,
+        }
     );
 
     my $plan = $self->_make_plan($final_steps);
 
     if ( $self->jobs() > 1 ) {
-        $self->_run_parallel( $plan, $config );
+        $self->_run_parallel( $plan, $config, $force_step_execution );
     }
     else {
-        $self->_run_sequential( $plan, $config );
+        $self->_run_sequential( $plan, $config, $force_step_execution );
     }
 
     return;
 }
 
 sub _run_sequential {
-    my $self   = shift;
-    my $plan   = shift;
-    my $config = shift;
+    my $self                 = shift;
+    my $plan                 = shift;
+    my $config               = shift;
+    my $force_step_execution = shift;
 
-    my $state = Stepford::Runner::State->new( logger => $self->logger() );
+    my $state = Stepford::Runner::State->new(
+        force_step_execution => $force_step_execution,
+        logger               => $self->logger(),
+    );
 
     for my $set ( $plan->step_sets() ) {
         $state->start_step_set();
@@ -109,13 +117,17 @@ sub _run_sequential {
 }
 
 sub _run_parallel {
-    my $self   = shift;
-    my $plan   = shift;
-    my $config = shift;
+    my $self                 = shift;
+    my $plan                 = shift;
+    my $config               = shift;
+    my $force_step_execution = shift;
 
     my $pm = Parallel::ForkManager->new( $self->jobs() );
 
-    my $state = Stepford::Runner::State->new( logger => $self->logger() );
+    my $state = Stepford::Runner::State->new(
+        force_step_execution => $force_step_execution,
+        logger               => $self->logger(),
+    );
     $pm->run_on_finish(
         sub {
             my ( $pid, $exit_code, $step_name, $signal, $message )
@@ -387,7 +399,8 @@ sure that no step provides its own dependencies as productions.
 For each step, the runner checks if it is up to date compared to its
 dependencies (as determined by the C<< $step->last_run_time() >> method. If
 the step is up to date, it is skipped, otherwise the runner calls C<<
-$step->run() >> on the step.
+$step->run() >> on the step.  You can avoid this check and force all steps to
+be executed with the C< force_step_execution > parameter (documented below.)
 
 Note that the step objects are always I<constructed>, so you should avoid
 doing a lot of work in your constructor. Save that for the C<run()> method.
@@ -417,6 +430,15 @@ C<init_arg> values.
 
 Note that values generated as productions from previous steps will override
 the corresponding key in the config hash reference.
+
+=item * force_step_execution
+
+This argument defaults to false.
+
+This controls if we should force all steps to be executed rather than checking
+which steps are up to date and do not need re-executing.  Even with this set
+each step will only be executed once per run regardless of how many other
+steps depend on it during execution.
 
 =back
 
