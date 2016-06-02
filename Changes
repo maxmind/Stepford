@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+- Added the force_step_execution option to Stepford::Runner to force running
+  all steps reguardless of the last run time.
+
+
 0.003006 2016-05-31
 
 - Fixed warning that could occur from trying to inline the constructor for

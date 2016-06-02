@@ -8,10 +8,16 @@ our $VERSION = '0.003007';
 
 use List::AllUtils qw( max );
 use Stepford::Error;
-use Stepford::Types qw( ArrayRef HashRef Logger );
+use Stepford::Types qw( ArrayRef Bool HashRef Logger );
 
 use Moose;
 use MooseX::StrictConstructor;
+
+has force_step_execution => (
+    is      => 'ro',
+    isa     => Bool,
+    default => 0,
+);
 
 has logger => (
     is      => 'ro',
@@ -107,6 +113,12 @@ sub _constructor_args_for_class {
 sub step_is_up_to_date {
     my $self = shift;
     my $step = shift;
+
+    if ( $self->force_step_execution ) {
+        $self->logger()
+            ->debug('Force step execution enabled. Running this step.');
+        return 0;
+    }
 
     my $previous_steps_last_run_time
         = max( grep { defined } @{ $self->_previous_steps_run_times } );
