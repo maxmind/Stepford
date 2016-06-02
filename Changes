@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.003007 2016-06-02
+
 - Added the force_step_execution option to Stepford::Runner to force running
   all steps reguardless of the last run time.
 
