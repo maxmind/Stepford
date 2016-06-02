@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.003007';
+our $VERSION = '0.003008';
 
 use Forest::Tree;
 use List::AllUtils qw( all uniq );

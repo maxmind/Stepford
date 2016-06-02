@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.003007';
+our $VERSION = '0.003008';
 
 use List::AllUtils qw( any );
 use Stepford::LoggerWithMoniker;

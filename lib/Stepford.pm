@@ -3,7 +3,7 @@ package Stepford;
 use strict;
 use warnings;
 
-our $VERSION = '0.003007';
+our $VERSION = '0.003008';
 
 1;
 
