@@ -17,8 +17,8 @@ my $wait  = $dir->file('wait');
 # How this test works:
 #
 #   Step 1: Just creates 'file1' on disk
-#   Step 2: Dependant on Step 1, create 'file2' on disk with the contents of 'file1'
-#   Step 3: Dependant on Step 2, create 'file3' on disk with the contents of 'file2'
+#   Step 2: Dependent on Step 1, create 'file2' on disk with the contents of 'file1'
+#   Step 3: Dependent on Step 2, create 'file3' on disk with the contents of 'file2'
 #
 #  The first time through we run step 3 that creates all the files
 #
