@@ -70,7 +70,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
     like(
         $plan_message->{message},
         qr/Plan for Test1::Step::CombineFiles/,
-        'logged plan when ->run() was called'
+        'logged plan when ->run was called'
     );
 
     like(
@@ -89,7 +89,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
     );
 
     my @object_constructor_messages
-        = grep { $_->{level} eq 'debug' && $_->{message} =~ /\Q->new()/ }
+        = grep { $_->{level} eq 'debug' && $_->{message} =~ /\Q->new/ }
         @messages;
     is(
         scalar @object_constructor_messages,
@@ -99,7 +99,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
     is(
         $object_constructor_messages[0]{message},
-        'Test1::Step::CreateA1->new()',
+        'Test1::Step::CreateA1->new',
         'logged a message indicating that a step was being created'
     );
 
@@ -110,7 +110,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
     );
 
     for my $file ( map { $tempdir->file($_) } qw( a1 a2 combined ) ) {
-        ok( -f $file, $file->basename() . ' file exists' );
+        ok( -f $file, $file->basename . ' file exists' );
     }
 
     @messages = ();
@@ -150,7 +150,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
         is(
             $count,
             $expect_run{$suffix},
-            "$class->run() was called the expected number of times - skipped when up to date"
+            "$class->run was called the expected number of times - skipped when up to date"
         );
     }
 }
@@ -421,7 +421,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
     )->_make_plan( ['Test6::Step::A2'] );
 
     is(
-        $plan->_production_map()->{thing_a},
+        $plan->_production_map->{thing_a},
         'Test6::Step::A1',
         'when two steps have the same production, choose the one that sorts first'
     );
@@ -448,7 +448,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
     );
 
     sub run {
-        $_[0]->file()->spew( $_[0]->content() );
+        $_[0]->file->spew( $_[0]->content );
     }
 
     sub last_run_time { }
@@ -468,9 +468,9 @@ my $tempdir = tempdir( CLEANUP => 1 );
     );
 
     is(
-        scalar $tempdir->file('test7-step-a')->slurp(),
+        scalar $tempdir->file('test7-step-a')->slurp,
         'new content',
-        'config passed to $runner->run() is passed to step constructor'
+        'config passed to $runner->run is passed to step constructor'
     );
 }
 
@@ -690,7 +690,7 @@ sub _test_plan {
             map { _prefix( $prefix, $_ ) }
                 ref $final_steps ? @{$final_steps} : $final_steps
         ],
-    )->step_sets();
+    )->step_sets;
 
     push @{$expect}, ['Stepford::FinalStep'];
 

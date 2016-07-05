@@ -31,7 +31,7 @@ around BUILDARGS => sub {
     if ( $args->{logger} ) {
         $args->{logger} = Stepford::LoggerWithMoniker->new(
             logger  => $args->{logger},
-            moniker => $class->_log_moniker(),
+            moniker => $class->_log_moniker,
         );
     }
 
@@ -49,30 +49,29 @@ sub productions {
 
     return
         grep { $_->does('Stepford::Trait::StepProduction') }
-        $class->meta()->get_all_attributes();
+        $class->meta->get_all_attributes;
 }
 
 sub has_production {
     my $class = shift;
     my $name  = shift;
 
-    return any { $_->name() eq $name } $class->productions();
+    return any { $_->name eq $name } $class->productions;
 }
 
 sub productions_as_hashref {
     my $self = shift;
 
-    return { map { $_->name() => $self->production_value( $_->name() ) }
-            $self->productions() };
+    return { map { $_->name => $self->production_value( $_->name ) }
+            $self->productions };
 }
 
 sub production_value {
     my $self = shift;
     my $name = shift;
 
-    my $reader
-        = $self->meta()->find_attribute_by_name($name)->get_read_method();
-    return $self->$reader();
+    my $reader = $self->meta->find_attribute_by_name($name)->get_read_method;
+    return $self->$reader;
 }
 
 sub dependencies {
@@ -80,7 +79,7 @@ sub dependencies {
 
     return
         grep { $_->does('Stepford::Trait::StepDependency') }
-        $class->meta()->get_all_attributes();
+        $class->meta->get_all_attributes;
 }
 
 1;
@@ -105,13 +104,13 @@ classes by the L<Stepford::Runner> object.
 
 The Step object will wrap the logger with an object that prepends prepends
 C<[$log_moniker] > to each log message. The moniker is determined by calling
-C<< $class->_log_moniker() >> on the class during object construction.
+C<< $class->_log_moniker >> on the class during object construction.
 
 =head1 METHODS
 
 This role provides the following methods:
 
-=head2 $step->productions()
+=head2 $step->productions
 
 This method returns a list of L<Moose::Meta::Attribute> objects that were
 given the C<StepProduction> trait. This can be an empty list.
@@ -120,7 +119,7 @@ given the C<StepProduction> trait. This can be an empty list.
 
 Returns true if the step has a production of the given name.
 
-=head2 $step->productions_as_hashref()
+=head2 $step->productions_as_hashref
 
 Returns all production values as a hash reference.
 
@@ -129,7 +128,7 @@ Returns all production values as a hash reference.
 This method returns the value of the given production for the object it is
 called on.
 
-=head2 $step->dependencies()
+=head2 $step->dependencies
 
 This method returns a list of L<Moose::Meta::Attribute> objects that were
 given the C<StepDependency> trait. This can be an empty list.
@@ -139,28 +138,28 @@ given the C<StepDependency> trait. This can be an empty list.
 All classes which consume the L<Stepford::Role::Step> role must implement the
 following methods:
 
-=head2 $step->run()
+=head2 $step->run
 
 This method receives no arguments. It is expected to do whatever it is that
 the step does.
 
 It may also do other things such as record the last run time.
 
-=head2 $step->last_run_time()
+=head2 $step->last_run_time
 
 This method must return a timestamp marking the last time the step was
 run. You are encouraged to use L<Time::HiRes> as appropriate to provide hi-res
 timestamps.
 
 You can return C<undef> from this method to request an unconditional rebuild
-of this step, regardless of the C<last_run_time()> of previous steps.
+of this step, regardless of the C<last_run_time> of previous steps.
 
 =head1 OPTIONAL METHODS
 
 All classes which consume the L<Stepford::Role::Step> role may implement the
 following methods:
 
-=head2 $class->_log_moniker()
+=head2 $class->_log_moniker
 
 This is expected to return a string identifying the class for the purposes of
 logging. The default moniker is the full class name, but you may prefer to

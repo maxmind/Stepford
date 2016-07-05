@@ -41,7 +41,7 @@ my $logger
             \Qcontains more than one production: a_production \E
             \Qanother_production\E
            /x,
-        'AtomicFileGeneratorTest::TooManyFilesStep->new() dies because it'
+        'AtomicFileGeneratorTest::TooManyFilesStep->new dies because it'
             . ' contains more than one production',
     );
 }
@@ -68,16 +68,16 @@ my $logger
 {
     my $iut = AtomicFileGeneratorTest::NoWrittenFileStep->new(
         logger => $logger );
-    my $e = exception { $iut->run() };
+    my $e = exception { $iut->run };
     like(
         $e,
         qr/
             \QThe AtomicFileGeneratorTest::NoWrittenFileStep class consumed \E
             \Qthe Stepford::Role::Step::FileGenerator::Atomic role but \E
-            \Qrun() produced no pre-commit production file at: \E
+            \Qrun produced no pre-commit production file at: \E
            /x,
-        'AtomicFileGeneratorTest::NoWrittenFileStep->run() dies because the'
-            . ' production file was not found after concrete step run()',
+        'AtomicFileGeneratorTest::NoWrittenFileStep->run dies because the'
+            . ' production file was not found after concrete step run',
     );
 }
 
@@ -103,9 +103,9 @@ my $logger
 
     sub run {
         my $self = shift;
-        my $file = $self->pre_commit_file();
+        my $file = $self->pre_commit_file;
         $file->spew('line 1');
-        die 'expected death' if $self->should_die();
+        die 'expected death' if $self->should_die;
         $file->spew("line 1\nline 2");
     }
 }
@@ -118,18 +118,18 @@ my $logger
         a_file     => $file,
     );
 
-    my $pre_commit_file = $step_that_lives->pre_commit_file();
+    my $pre_commit_file = $step_that_lives->pre_commit_file;
     is(
-        $pre_commit_file->parent()->stringify(),
-        $file->parent()->stringify(),
+        $pre_commit_file->parent->stringify,
+        $file->parent->stringify,
         'pre_commit_file and final file are in the same directory'
     );
 
-    $step_that_lives->run();
+    $step_that_lives->run;
     is(
-        $file->slurp(),
+        $file->slurp,
         "line 1\nline 2",
-        'file written correctly to final destination when run() not'
+        'file written correctly to final destination when run not'
             . ' interrupted',
     );
 
@@ -148,10 +148,10 @@ my $logger
         a_file     => $file,
     );
 
-    my $pre_commit_file = $step_that_dies->pre_commit_file();
+    my $pre_commit_file = $step_that_dies->pre_commit_file;
 
-    exception { $step_that_dies->run() };
-    ok( !-e $file, 'file not written at all when run() interrupted' );
+    exception { $step_that_dies->run };
+    ok( !-e $file, 'file not written at all when run interrupted' );
 
     ok(
         !-f $pre_commit_file,
@@ -178,9 +178,9 @@ my $logger
     sub run {
         my $self = shift;
 
-        return if -f $self->a_file() && $self->a_file() !~ /regenerate/;
+        return if -f $self->a_file && $self->a_file !~ /regenerate/;
 
-        $self->pre_commit_file()->spew( __PACKAGE__ . ' - ' . $x++ );
+        $self->pre_commit_file->spew( __PACKAGE__ . ' - ' . $x++ );
     }
 }
 
@@ -191,22 +191,22 @@ my $logger
         logger => $logger,
     );
 
-    $step->run();
+    $step->run;
 
     is(
-        $post_commit->slurp(),
+        $post_commit->slurp,
         'AtomicFileGeneratorTest::PostCommitExists - 0',
         'post commit file has expected content after first run'
     );
 
     is(
-        exception { $step->run() },
+        exception { $step->run },
         undef,
         'no exception running step a second time'
     );
 
     is(
-        $post_commit->slurp(),
+        $post_commit->slurp,
         'AtomicFileGeneratorTest::PostCommitExists - 0',
         'post commit file has expected content after second run'
     );
@@ -219,22 +219,22 @@ my $logger
         logger => $logger,
     );
 
-    $step->run();
+    $step->run;
 
     is(
-        $post_commit->slurp(),
+        $post_commit->slurp,
         'AtomicFileGeneratorTest::PostCommitExists - 1',
         'post commit file has expected content after first run'
     );
 
     is(
-        exception { $step->run() },
+        exception { $step->run },
         undef,
         'no exception running step a second time'
     );
 
     is(
-        $post_commit->slurp(),
+        $post_commit->slurp,
         'AtomicFileGeneratorTest::PostCommitExists - 2',
         'pre commit file is used even when post commit file exists'
     );

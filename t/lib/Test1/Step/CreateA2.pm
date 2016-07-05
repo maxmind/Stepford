@@ -20,7 +20,7 @@ has a2_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    default => sub { $_[0]->tempdir()->file('a2') },
+    default => sub { $_[0]->tempdir->file('a2') },
 );
 
 our $RunCount = 0;
@@ -28,13 +28,13 @@ our $RunCount = 0;
 sub run {
     my $self = shift;
 
-    return if -f $self->a2_file();
+    return if -f $self->a2_file;
 
-    $self->a2_file()->touch();
+    $self->a2_file->touch;
 }
 
 after run => sub { $RunCount++ };
 
-__PACKAGE__->meta()->make_immutable();
+__PACKAGE__->meta->make_immutable;
 
 1;

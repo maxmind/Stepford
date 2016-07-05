@@ -26,10 +26,10 @@ has inner_steps_test_original_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    default => sub { $_[0]->tempdir()->file('foo.orig') },
+    default => sub { $_[0]->tempdir->file('foo.orig') },
 );
 
-sub run { $_[0]->inner_steps_test_original_file()->touch() }
+sub run { $_[0]->inner_steps_test_original_file->touch }
 
 package Test1::Step::BackupAFile;
 
@@ -58,18 +58,18 @@ has inner_steps_test_backup_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    default => sub { $_[0]->tempdir()->file('foo.bak') },
+    default => sub { $_[0]->tempdir->file('foo.bak') },
 );
 
 sub run {
     my $self = shift;
 
     copy(
-        $self->inner_steps_test_original_file(),
-        $self->inner_steps_test_backup_file()
+        $self->inner_steps_test_original_file,
+        $self->inner_steps_test_backup_file
     );
 }
 
-__PACKAGE__->meta()->make_immutable();
+__PACKAGE__->meta->make_immutable;
 
 1;

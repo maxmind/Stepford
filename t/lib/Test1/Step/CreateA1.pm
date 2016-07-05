@@ -21,7 +21,7 @@ has a1_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    default => sub { $_[0]->tempdir()->file('a1') },
+    default => sub { $_[0]->tempdir->file('a1') },
 );
 
 our $RunCount = 0;
@@ -29,13 +29,13 @@ our $RunCount = 0;
 sub run {
     my $self = shift;
 
-    return if -f $self->a1_file();
+    return if -f $self->a1_file;
 
-    $self->a1_file()->touch();
+    $self->a1_file->touch;
 }
 
 after run => sub { $RunCount++ };
 
-__PACKAGE__->meta()->make_immutable();
+__PACKAGE__->meta->make_immutable;
 
 1;

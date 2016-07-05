@@ -211,12 +211,12 @@ my $last3_file = "$tempdir/last3";
     like(
         exception { $runner->run( final_steps => 'Test::Step::Last3' ) },
         qr/Child process \d+ failed while running step Test::Step::Exits \(exited with code 42\)/,
-        'runner aborted run because child process exited by calling exit()'
+        'runner aborted run because child process exited by calling exit'
     );
 
     ok(
         !-f $last3_file,
-        'file created by final step does not exist because previous step called exit()'
+        'file created by final step does not exist because previous step called exit'
     );
 }
 

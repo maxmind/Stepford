@@ -32,12 +32,12 @@ around $Levels => sub {
     my $self    = shift;
     my $message = shift;
 
-    $message = '[' . $self->_moniker() . '] ' . $message;
+    $message = '[' . $self->_moniker . '] ' . $message;
 
     return $self->$orig( $message, @_ );
 };
 
-__PACKAGE__->meta()->make_immutable();
+__PACKAGE__->meta->make_immutable;
 
 1;
 

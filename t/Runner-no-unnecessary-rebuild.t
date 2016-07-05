@@ -52,8 +52,8 @@ my $iteration = 1;
     );
 
     sub run {
-        return if -f $_[0]->file1();
-        $_[0]->file1()->spew( __PACKAGE__ . " - $iteration\n" );
+        return if -f $_[0]->file1;
+        $_[0]->file1->spew( __PACKAGE__ . " - $iteration\n" );
     }
 }
 
@@ -78,9 +78,8 @@ my $iteration = 1;
     );
 
     sub run {
-        $_[0]->file2()
-            ->spew(
-            $_[0]->file1()->slurp() . __PACKAGE__ . " - $iteration\n" );
+        $_[0]->file2->spew(
+            $_[0]->file1->slurp . __PACKAGE__ . " - $iteration\n" );
     }
 }
 
@@ -105,9 +104,8 @@ my $iteration = 1;
     );
 
     sub run {
-        $_[0]->file3()
-            ->spew(
-            $_[0]->file2()->slurp() . __PACKAGE__ . " - $iteration\n" );
+        $_[0]->file3->spew(
+            $_[0]->file2->slurp . __PACKAGE__ . " - $iteration\n" );
         $iteration++;
     }
 }
@@ -124,7 +122,7 @@ my $iteration = 1;
     for my $file ( $file1, $file2, $file3 ) {
         ok(
             -f $file,
-            $file->basename() . ' exists after running all steps'
+            $file->basename . ' exists after running all steps'
         );
     }
 
@@ -135,9 +133,9 @@ Test::Step::Step3 - 1
 EOF
 
     is(
-        scalar $file3->slurp(),
+        scalar $file3->slurp,
         $expect,
-        $file3->basename() . ' contains expected content'
+        $file3->basename . ' contains expected content'
     );
 
     $runner->run(
@@ -145,9 +143,9 @@ EOF
     );
 
     is(
-        scalar $file3->slurp(),
+        scalar $file3->slurp,
         $expect,
-        $file3->basename()
+        $file3->basename
             . ' content does not change if file1 is not regenerated on second run'
     );
 
@@ -163,7 +161,7 @@ EOF
     # we have the same timestamp and step2 is not run.
 
     $wait->touch;
-    $file1->remove() or diag "Could not remove file1!\n";
+    $file1->remove or diag "Could not remove file1!\n";
     touch_and_ensure_new_mtime($wait);
 
     $runner->run(
@@ -177,9 +175,9 @@ Test::Step::Step3 - 2
 EOF
 
     is(
-        scalar $file3->slurp(),
+        scalar $file3->slurp,
         $expect,
-        $file3->basename()
+        $file3->basename
             . ' content does change when file1 is regenerated on third run'
     );
 
@@ -196,9 +194,9 @@ Test::Step::Step3 - 3
 EOF
 
     is(
-        scalar $file3->slurp(),
+        scalar $file3->slurp,
         $expect,
-        $file3->basename()
+        $file3->basename
             . ' content does change when file3 is regenerated on fourth run'
     );
 
@@ -214,7 +212,7 @@ Test::Step::Step3 - 4
 EOF
 
     is(
-        scalar $file3->slurp(),
+        scalar $file3->slurp,
         $expect,
         'everything changes when we force_step_execution'
     );

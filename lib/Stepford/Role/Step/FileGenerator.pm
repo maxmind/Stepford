@@ -21,10 +21,10 @@ sub BUILD { }
 before BUILD => sub {
     my $self = shift;
 
-    my @not_files = sort map { $_->name() } grep {
-        !(     $_->has_type_constraint()
-            && $_->type_constraint()->is_a_type_of(File) )
-    } $self->productions();
+    my @not_files = sort map { $_->name } grep {
+        !(     $_->has_type_constraint
+            && $_->type_constraint->is_a_type_of(File) )
+    } $self->productions;
 
     croak 'The '
         . ( ref $self )
@@ -39,7 +39,7 @@ sub last_run_time {
     my $self = shift;
 
     my @production_files
-        = map { $self->${ \( $_->get_read_method() ) } } $self->productions();
+        = map { $self->${ \( $_->get_read_method ) } } $self->productions;
 
     ## no critic (Subroutines::ProhibitExplicitReturnUndef)
     return undef if any { !-f } @production_files;
@@ -64,7 +64,7 @@ functionality specific to generating files.
 
 This role provides the following methods:
 
-=head2 $step->BUILD()
+=head2 $step->BUILD
 
 This method adds a wrapper to the BUILD method which checks that all of the
 class's productions are of the C<File> type provided by
@@ -74,7 +74,7 @@ type.
 This check may be changed so that it is done as part of the class definition,
 if I can think of a way to do this sanely.
 
-=head2 $step->last_run_time()
+=head2 $step->last_run_time
 
 This returns the most recent file modification time from all of the step's
 productions, or C<undef> (requesting an unconditional run) if any productions

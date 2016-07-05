@@ -31,7 +31,7 @@ has combined_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    default => sub { $_[0]->tempdir()->file('combined') },
+    default => sub { $_[0]->tempdir->file('combined') },
 );
 
 our $RunCount = 0;
@@ -39,16 +39,16 @@ our $RunCount = 0;
 sub run {
     my $self = shift;
 
-    $self->combined_file()->spew(
+    $self->combined_file->spew(
         [
-            map { $_->slurp() } $self->a1_file_updated(),
-            $self->a2_file_updated()
+            map { $_->slurp } $self->a1_file_updated,
+            $self->a2_file_updated
         ]
     );
 }
 
 after run => sub { $RunCount++ };
 
-__PACKAGE__->meta()->make_immutable();
+__PACKAGE__->meta->make_immutable;
 
 1;
