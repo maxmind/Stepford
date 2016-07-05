@@ -7,6 +7,7 @@ use namespace::autoclean;
 our $VERSION = '0.003008';
 
 use List::AllUtils qw( first max );
+use Memory::Stats;
 use Module::Pluggable::Object;
 use MooseX::Params::Validate qw( validated_list );
 use Parallel::ForkManager;
@@ -46,6 +47,16 @@ has jobs => (
     is      => 'ro',
     isa     => PositiveInt,
     default => 1,
+);
+
+has _memory_stats => (
+    is      => 'ro',
+    isa     => 'Memory::Stats',
+    default => sub {
+        my $s = Memory::Stats->new;
+        $s->start;
+        $s;
+    },
 );
 
 has _step_classes => (
@@ -167,7 +178,7 @@ sub _run_parallel {
                 next;
             }
 
-            my $step = $state->make_step_object( $class, $config );
+            my $step = $self->_make_step_object( $state, $class, $config );
 
             if ( $state->step_is_up_to_date($step) ) {
                 $state->record_run_time( $step->last_run_time );
@@ -210,7 +221,7 @@ sub _run_step_in_process {
     my $class  = shift;
     my $config = shift;
 
-    my $step = $state->make_step_object( $class, $config );
+    my $step = $self->_make_step_object( $state, $class, $config );
 
     $step->run
         unless $state->step_is_up_to_date($step);
@@ -219,6 +230,47 @@ sub _run_step_in_process {
     $state->record_productions( $step->productions_as_hashref );
 
     return;
+}
+
+sub _make_step_object {
+    my $self   = shift;
+    my $state  = shift;
+    my $class  = shift;
+    my $config = shift;
+
+    $self->_log_memory_usage("Before constructing $class");
+
+    my $step = $state->make_step_object( $class, $config );
+
+    $self->_log_memory_usage("After constructing $class");
+
+    return $step;
+}
+
+sub _log_memory_usage {
+    my $self       = shift;
+    my $checkpoint = shift;
+
+    $self->_memory_stats->checkpoint($checkpoint);
+
+    # There's no way to get the total use so far without calling stop(), which
+    # is quite annoying. See
+    # https://github.com/celogeek/perl-memory-stats/issues/3.
+
+    ## no critic (Subroutines::ProtectPrivateSubs)
+    $self->logger->info(
+        sprintf(
+            'Total memory use since Stepford started is %d',
+            $self->_memory_stats->_memory_usage->[-1][1]
+                - $self->_memory_stats->_memory_usage->[0][1]
+        )
+    );
+    $self->logger->info(
+        sprintf(
+            'Memory since last checked is %d',
+            $self->_memory_stats->delta_usage
+        )
+    );
 }
 
 sub _make_plan {

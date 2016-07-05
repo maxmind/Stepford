@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+- Log output at the info level now includes details of memory usage as before
+  and after each step object is created.
+
+
 0.003007 2016-06-02
 
 - Added the force_step_execution option to Stepford::Runner to force running
