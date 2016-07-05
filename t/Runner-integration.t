@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use autodie;
 
 use lib 't/lib';
 
@@ -24,7 +25,7 @@ sub _test_final_step_dependencies {
     my $t1            = $combined_file->stat->mtime;
     my $t2            = $t1 + 1000;
 
-    utime 0, $t2, $combined_file;
+    utime 0, $t2, $combined_file or die $!;
 
     _run_combine_files( $jobs, $tempdir );
 
@@ -34,7 +35,7 @@ sub _test_final_step_dependencies {
     );
 
     my $t3 = $t1 - 1000;
-    utime 0, $t3, $combined_file;
+    utime 0, $t3, $combined_file or die $!;
 
     _run_combine_files( $jobs, $tempdir );
 

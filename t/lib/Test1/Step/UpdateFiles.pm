@@ -2,6 +2,7 @@ package Test1::Step::UpdateFiles;
 
 use strict;
 use warnings;
+use namespace::autoclean;
 
 use Stepford::Types qw( Dir File );
 
@@ -45,6 +46,7 @@ has a2_file_updated => (
     default => sub { $_[0]->tempdir->file('a2-updated') },
 );
 
+## no critic (Variables::ProhibitPackageVars)
 our $RunCount = 0;
 
 sub run {
@@ -54,6 +56,8 @@ sub run {
 }
 
 after run => sub { $RunCount++ };
+
+sub run_count { $RunCount }
 
 sub _fill_file {
     my $self = shift;

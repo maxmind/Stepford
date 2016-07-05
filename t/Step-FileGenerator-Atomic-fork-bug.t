@@ -1,3 +1,4 @@
+## no critic (Moose::RequireCleanNamespace, Moose::RequireMakeImmutable)
 use strict;
 use warnings;
 

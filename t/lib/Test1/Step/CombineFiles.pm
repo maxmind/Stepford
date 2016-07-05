@@ -1,5 +1,9 @@
 package Test1::Step::CombineFiles;
 
+use strict;
+use warnings;
+use namespace::autoclean;
+
 use Stepford::Types qw( Dir File );
 
 use Moose;
@@ -34,6 +38,7 @@ has combined_file => (
     default => sub { $_[0]->tempdir->file('combined') },
 );
 
+## no critic (Variables::ProhibitPackageVars)
 our $RunCount = 0;
 
 sub run {
@@ -48,6 +53,8 @@ sub run {
 }
 
 after run => sub { $RunCount++ };
+
+sub run_count { $RunCount }
 
 __PACKAGE__->meta->make_immutable;
 

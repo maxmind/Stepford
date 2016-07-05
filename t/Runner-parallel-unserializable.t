@@ -1,3 +1,4 @@
+## no critic (Moose::RequireCleanNamespace, Moose::RequireMakeImmutable, Modules::ProhibitMultiplePackages)
 use strict;
 use warnings;
 

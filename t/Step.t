@@ -1,3 +1,4 @@
+## no critic (Moose::RequireCleanNamespace, Moose::RequireMakeImmutable, Modules::ProhibitMultiplePackages)
 use strict;
 use warnings;
 
@@ -94,7 +95,7 @@ is_deeply(
         $self->logger->debug('Touching file');
 
         $self->output_file1->touch;
-        utime 100, 100, $self->output_file1;
+        utime 100, 100, $self->output_file1 or die $!;
 
         $self->output_file2->touch;
     }

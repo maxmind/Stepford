@@ -1,5 +1,7 @@
+## no critic (Moose::RequireCleanNamespace, Moose::RequireMakeImmutable, Modules::ProhibitMultiplePackages)
 use strict;
 use warnings;
+use autodie;
 
 use lib 't/lib';
 
@@ -140,15 +142,14 @@ my $tempdir = tempdir( CLEANUP => 1 );
         CreateA1     => 2,
         CreateA2     => 2,
         UpdateFiles  => 1,
-        CombineFiles => 1
+        CombineFiles => 1,
     );
 
     for my $suffix ( sort keys %expect_run ) {
         my $class = 'Test1::Step::' . $suffix;
-        my $count = eval '$' . $class . '::RunCount';
 
         is(
-            $count,
+            $class->run_count,
             $expect_run{$suffix},
             "$class->run was called the expected number of times - skipped when up to date"
         );

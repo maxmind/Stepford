@@ -1,5 +1,7 @@
+## no critic (Moose::RequireCleanNamespace, Moose::RequireMakeImmutable, Modules::ProhibitMultiplePackages)
 use strict;
 use warnings;
+use autodie;
 
 use Log::Dispatch;
 use Log::Dispatch::Array;

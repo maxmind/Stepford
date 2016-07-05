@@ -2,6 +2,7 @@ package Test1::Step::CreateA1;
 
 use strict;
 use warnings;
+use namespace::autoclean;
 
 use Stepford::Types qw( Dir File );
 use Time::HiRes qw( stat );
@@ -24,6 +25,7 @@ has a1_file => (
     default => sub { $_[0]->tempdir->file('a1') },
 );
 
+## no critic (Variables::ProhibitPackageVars)
 our $RunCount = 0;
 
 sub run {
@@ -35,6 +37,8 @@ sub run {
 }
 
 after run => sub { $RunCount++ };
+
+sub run_count { $RunCount }
 
 __PACKAGE__->meta->make_immutable;
 
