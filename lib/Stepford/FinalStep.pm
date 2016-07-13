@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.003008';
+our $VERSION = '0.003009';
 
 use Moose;
 use MooseX::StrictConstructor;
