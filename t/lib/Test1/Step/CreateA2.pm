@@ -2,6 +2,7 @@ package Test1::Step::CreateA2;
 
 use strict;
 use warnings;
+use namespace::autoclean;
 
 use Stepford::Types qw( Dir File );
 
@@ -20,21 +21,24 @@ has a2_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    default => sub { $_[0]->tempdir()->file('a2') },
+    default => sub { $_[0]->tempdir->file('a2') },
 );
 
+## no critic (Variables::ProhibitPackageVars)
 our $RunCount = 0;
 
 sub run {
     my $self = shift;
 
-    return if -f $self->a2_file();
+    return if -f $self->a2_file;
 
-    $self->a2_file()->touch();
+    $self->a2_file->touch;
 }
 
 after run => sub { $RunCount++ };
 
-__PACKAGE__->meta()->make_immutable();
+sub run_count { $RunCount }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

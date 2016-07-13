@@ -54,8 +54,8 @@ has _current_steps_run_times => (
 sub start_step_set {
     my $self = shift;
 
-    $self->_previous_steps_run_times( $self->_current_steps_run_times() );
-    $self->_clear_current_steps_run_times();
+    $self->_previous_steps_run_times( $self->_current_steps_run_times );
+    $self->_clear_current_steps_run_times;
 
     return;
 }
@@ -70,7 +70,7 @@ sub make_step_object {
         $config,
     );
 
-    $self->logger()->debug("$class->new()");
+    $self->logger->debug("$class->new");
 
     return $class->new($args);
 }
@@ -83,16 +83,16 @@ sub _constructor_args_for_class {
     my %args;
     for my $init_arg (
         grep { defined }
-        map  { $_->init_arg() } $class->meta()->get_all_attributes()
+        map  { $_->init_arg } $class->meta->get_all_attributes
         ) {
 
         $args{$init_arg} = $config->{$init_arg}
             if exists $config->{$init_arg};
     }
 
-    my $productions = $self->_productions();
+    my $productions = $self->_productions;
 
-    for my $dep ( map { $_->name() } $class->dependencies() ) {
+    for my $dep ( map { $_->name } $class->dependencies ) {
 
         # XXX - I'm not sure this error is reachable. We already check that a
         # class's declared dependencies can be satisfied while building the
@@ -105,7 +105,7 @@ sub _constructor_args_for_class {
         $args{$dep} = $productions->{$dep};
     }
 
-    $args{logger} = $self->logger();
+    $args{logger} = $self->logger;
 
     return \%args;
 }
@@ -115,23 +115,23 @@ sub step_is_up_to_date {
     my $step = shift;
 
     if ( $self->force_step_execution ) {
-        $self->logger()
-            ->debug('Forced step execution enabled. Running this step.');
+        $self->logger->debug(
+            'Forced step execution enabled. Running this step.');
         return 0;
     }
 
     my $previous_steps_last_run_time
         = max( grep { defined } @{ $self->_previous_steps_run_times } );
 
-    my $step_last_run_time = $step->last_run_time();
+    my $step_last_run_time = $step->last_run_time;
 
     my $class = blessed $step;
     if (   defined $previous_steps_last_run_time
         && defined $step_last_run_time
         && $step_last_run_time >= $previous_steps_last_run_time ) {
 
-        $self->logger()
-            ->info( "Last run time for $class is $step_last_run_time."
+        $self->logger->info(
+                  "Last run time for $class is $step_last_run_time."
                 . " Previous steps last run time is $previous_steps_last_run_time."
                 . ' Skipping this step.' );
 
@@ -140,27 +140,25 @@ sub step_is_up_to_date {
 
     if (   defined $previous_steps_last_run_time
         && defined $step_last_run_time ) {
-        $self->logger()
-            ->debug( "Last run time for $class is $step_last_run_time."
+        $self->logger->debug(
+                  "Last run time for $class is $step_last_run_time."
                 . " Previous steps last run time is $previous_steps_last_run_time."
                 . ' Running this step.' );
     }
     elsif ( defined $previous_steps_last_run_time
         && !defined $step_last_run_time ) {
-        $self->logger()
-            ->debug("No last run time for $class. Running this step.");
+        $self->logger->debug(
+            "No last run time for $class. Running this step.");
     }
     elsif ( !defined $previous_steps_last_run_time
         && defined $step_last_run_time ) {
-        $self->logger()
-            ->debug(
+        $self->logger->debug(
             'No last run time for the previous steps. Running this step.');
     }
     else {
-        $self->logger()
-            ->debug(
+        $self->logger->debug(
             "No last run time for $class or the previous steps. Running this step."
-            );
+        );
     }
 
     return 0;
@@ -170,7 +168,7 @@ sub record_run_time {
     my $self = shift;
     my $time = shift;
 
-    push @{ $self->_current_steps_run_times() }, $time;
+    push @{ $self->_current_steps_run_times }, $time;
 
     return;
 }
@@ -179,7 +177,7 @@ sub record_productions {
     my $self        = shift;
     my $productions = shift;
 
-    my $current_productions = $self->_productions();
+    my $current_productions = $self->_productions;
     for my $key ( keys %{$productions} ) {
         $current_productions->{$key} = $productions->{$key};
     }
@@ -187,7 +185,7 @@ sub record_productions {
     return;
 }
 
-__PACKAGE__->meta()->make_immutable();
+__PACKAGE__->meta->make_immutable;
 
 1;
 

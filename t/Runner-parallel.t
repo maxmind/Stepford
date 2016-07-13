@@ -26,7 +26,7 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
     );
 
     for my $file ( map { $tempdir->file($_) } qw( a1 a2 combined ) ) {
-        ok( -f $file, $file->basename() . ' file exists' );
+        ok( -f $file, $file->basename . ' file exists' );
     }
 }
 

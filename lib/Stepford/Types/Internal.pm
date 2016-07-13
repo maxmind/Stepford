@@ -23,13 +23,15 @@ use MooseX::Types -declare => [
 ];
 
 subtype PossibleClassName, as Str, inline_as {
-    $_[0]->parent()->_inline_check( $_[1] ) . ' && '
+    ## no critic (Subroutines::ProtectPrivateSubs)
+    $_[0]->parent->_inline_check( $_[1] ) . ' && '
         . $_[1]
         . ' =~ /^\\p{L}\\w*(?:::\\w+)*$/';
 };
 
 subtype ArrayOfClassPrefixes, as ArrayRef [PossibleClassName], inline_as {
-    $_[0]->parent()->_inline_check( $_[1] ) . " && \@{ $_[1] } >= 1";
+    ## no critic (Subroutines::ProtectPrivateSubs)
+    $_[0]->parent->_inline_check( $_[1] ) . " && \@{ $_[1] } >= 1";
 };
 
 coerce ArrayOfClassPrefixes, from PossibleClassName, via { [$_] };
@@ -39,7 +41,8 @@ subtype ArrayOfDependencies, as ArrayRef [NonEmptyStr];
 coerce ArrayOfDependencies, from NonEmptyStr, via { [$_] };
 
 subtype ArrayOfFiles, as ArrayRef [File], inline_as {
-    $_[0]->parent()->_inline_check( $_[1] ) . " && \@{ $_[1] } >= 1";
+    ## no critic (Subroutines::ProtectPrivateSubs)
+    $_[0]->parent->_inline_check( $_[1] ) . " && \@{ $_[1] } >= 1";
 };
 
 coerce ArrayOfFiles, from File, via { [$_] };

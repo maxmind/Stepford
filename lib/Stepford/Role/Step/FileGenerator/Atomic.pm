@@ -27,7 +27,7 @@ sub BUILD { }
 before BUILD => sub {
     my $self = shift;
 
-    my @production_names = sort map { $_->name() } $self->productions();
+    my @production_names = sort map { $_->name } $self->productions;
 
     croak 'The '
         . ( ref $self )
@@ -41,36 +41,36 @@ before BUILD => sub {
 sub _build_pre_commit_file {
     my $self = shift;
 
-    my $final_file = ( $self->productions() )[0];
-    my $reader     = $final_file->get_read_method();
+    my $final_file = ( $self->productions )[0];
+    my $reader     = $final_file->get_read_method;
 
-    return file( $self->$reader() . '.tmp' );
+    return file( $self->$reader . '.tmp' );
 }
 
 around run => sub {
     my $orig = shift;
     my $self = shift;
 
-    my $pre_commit = $self->pre_commit_file();
-    my $guard = guard { $pre_commit->remove() if -f $pre_commit };
+    my $pre_commit = $self->pre_commit_file;
+    my $guard = guard { $pre_commit->remove if -f $pre_commit };
 
     $self->$orig(@_);
 
-    my $read_method = ( $self->productions() )[0]->get_read_method();
-    my $post_commit = $self->$read_method();
+    my $read_method = ( $self->productions )[0]->get_read_method;
+    my $post_commit = $self->$read_method;
 
-    # The step's run() method may decide to simply not do anything if the
+    # The step's run method may decide to simply not do anything if the
     # post-commit file already exists, and that's ok.
     return if -f $post_commit && !-f $pre_commit;
 
     croak 'The '
         . ( ref $self )
         . ' class consumed the Stepford::Role::Step::FileGenerator::Atomic'
-        . ' role but run() produced no pre-commit production file at:'
+        . ' role but run produced no pre-commit production file at:'
         . " $pre_commit"
         unless -f $pre_commit;
 
-    $self->logger()->debug("Renaming $pre_commit to $post_commit");
+    $self->logger->debug("Renaming $pre_commit to $post_commit");
     rename( $pre_commit, $post_commit )
         or croak "Failed renaming $pre_commit -> $post_commit: $!";
 };
@@ -86,31 +86,31 @@ __END__
 This role consumes the L<Stepford::Role::Step::FileGenerator> role. It allows
 only one file production, but makes sure it is written atomically - the file
 will not exist if the step aborts. The file will only be committed to its
-final destination when C<run()> completes successfully.
+final destination when C<run> completes successfully.
 
 Instead of manipulating the file production directly, you work with the file
-given by C<< $step->pre_commit_file() >>. This role will make sure it gets
-committed after C<run()>.
+given by C<< $step->pre_commit_file >>. This role will make sure it gets
+committed after C<run>.
 
 =head1 METHODS
 
 This role provides the following methods:
 
-=head2 $step->BUILD()
+=head2 $step->BUILD
 
 This method adds a wrapper to the BUILD method which ensures that there is
 only one production.
 
-=head2 $step->pre_commit_file()
+=head2 $step->pre_commit_file
 
 This returns a temporary file in a temporary directory that you can manipulate
-inside C<run()>. It will be removed if the step fails, or renamed to the final
+inside C<run>. It will be removed if the step fails, or renamed to the final
 file production if the step succeeds.
 
 =head1 CAVEATS
 
 When running steps in parallel, it is important to ensure that you do not call
-the C<< $step->pre_commit_file() >> method outside of the C<< $step->run() >>
+the C<< $step->pre_commit_file >> method outside of the C<< $step->run >>
 method. If you call this at object creation time, this can cause the tempdir
-containing the C< pre_commit_file > file to be created and destroyed before the
-run method ever gets a chance to run.
+containing the C< pre_commit_file > file to be created and destroyed before
+the run method ever gets a chance to run.

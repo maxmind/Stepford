@@ -16,7 +16,7 @@ my $tempdir = dir( tempdir( CLEANUP => 1 ) );
 
     my $a1_updated_file = $tempdir->file('a1-updated');
 
-    $a1_updated_file->remove();
+    $a1_updated_file->remove;
 
     _run_combine_files();
 

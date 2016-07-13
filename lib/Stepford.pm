@@ -35,8 +35,8 @@ __END__
     sub run {
         my $self = shift;
 
-        open my $input_fh,  '<', $self->input_file();
-        open my $output_fh, '>', $self->output_file();
+        open my $input_fh,  '<', $self->input_file;
+        open my $output_fh, '>', $self->output_file;
         while (<$input_fh>) {
             chomp;
             print {$output_fh} $_ * 2, "\n";
@@ -96,7 +96,7 @@ The L<Stepford::Runner> class analyzes the dependencies and productions for
 each step to figure out what steps it needs to run in order to satisfy the
 dependencies of the final steps you specify.
 
-Each step can specify a C<last_run_time()> method (or get one from the
+Each step can specify a C<last_run_time> method (or get one from the
 L<Stepford::Role::Step::FileGenerator> role). The runner uses this to skip
 steps that are up to date.
 
@@ -150,15 +150,15 @@ that satisfies the dependency (in terms of the value's type, content, etc.).
 If multiple classes have a production of the same name, then the first class
 that Stepford sees "wins". This can be useful if you want to override a step
 for testing, for example. See the documentation of the L<Stepford::Runner>
-class's C<new()> method for more details on step namespaces.
+class's C<new> method for more details on step namespaces.
 
 It is not possible for a class to have an attribute that is simultaneously a
 dependency and a production. This would be a natural design for a step that
 transformed a data value, but it makes dependency resolution
 impossible. However, nothing stops you from having two attributes that each
 produce the same B<value>. For example, the attributes could both reference a
-path on disk and the step's C<run()> method could alter the content of that
-file in place.
+path on disk and the step's C<run> method could alter the content of that file
+in place.
 
 It is not currently possible for a class to have optional dependencies. This
 may be added in the future if it turns out to be useful.

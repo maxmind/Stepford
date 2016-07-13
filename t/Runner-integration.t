@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use autodie;
 
 use lib 't/lib';
 
@@ -21,25 +22,25 @@ sub _test_final_step_dependencies {
     _run_combine_files( $jobs, $tempdir );
 
     my $combined_file = $tempdir->file('combined');
-    my $t1            = $combined_file->stat()->mtime();
+    my $t1            = $combined_file->stat->mtime;
     my $t2            = $t1 + 1000;
 
-    utime 0, $t2, $combined_file;
+    utime 0, $t2, $combined_file or die $!;
 
     _run_combine_files( $jobs, $tempdir );
 
     is(
-        $combined_file->stat()->mtime(),
+        $combined_file->stat->mtime,
         $t2, "combined file > updated files => no build, jobs=$jobs"
     );
 
     my $t3 = $t1 - 1000;
-    utime 0, $t3, $combined_file;
+    utime 0, $t3, $combined_file or die $!;
 
     _run_combine_files( $jobs, $tempdir );
 
     isnt(
-        $combined_file->stat()->mtime(),
+        $combined_file->stat->mtime,
         $t3, "combined file < updated files => build, jobs=$jobs"
     );
 }

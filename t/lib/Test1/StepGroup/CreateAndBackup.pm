@@ -1,3 +1,4 @@
+## no critic (Modules::ProhibitMultiplePackages)
 package Test1::StepGroup::CreateAndBackup;
 
 use strict;
@@ -8,6 +9,8 @@ use warnings;
 # the group package is under the Test1::StepGroup namespace
 
 package Test1::Step::CreateAFile;
+
+use namespace::autoclean;
 
 use Stepford::Types qw( Dir File );
 
@@ -26,12 +29,14 @@ has inner_steps_test_original_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    default => sub { $_[0]->tempdir()->file('foo.orig') },
+    default => sub { $_[0]->tempdir->file('foo.orig') },
 );
 
-sub run { $_[0]->inner_steps_test_original_file()->touch() }
+sub run { $_[0]->inner_steps_test_original_file->touch }
 
 package Test1::Step::BackupAFile;
+
+use namespace::autoclean;
 
 use File::Copy qw( copy );
 use Stepford::Types qw( Dir File );
@@ -58,18 +63,18 @@ has inner_steps_test_backup_file => (
     is      => 'ro',
     isa     => File,
     lazy    => 1,
-    default => sub { $_[0]->tempdir()->file('foo.bak') },
+    default => sub { $_[0]->tempdir->file('foo.bak') },
 );
 
 sub run {
     my $self = shift;
 
     copy(
-        $self->inner_steps_test_original_file(),
-        $self->inner_steps_test_backup_file()
+        $self->inner_steps_test_original_file,
+        $self->inner_steps_test_backup_file
     );
 }
 
-__PACKAGE__->meta()->make_immutable();
+__PACKAGE__->meta->make_immutable;
 
 1;

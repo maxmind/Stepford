@@ -1,3 +1,4 @@
+## no critic (Moose::RequireCleanNamespace, Moose::RequireMakeImmutable)
 use strict;
 use warnings;
 
@@ -33,7 +34,7 @@ my $logger
 
     sub run {
         my $self = shift;
-        my $file = $self->pre_commit_file();
+        my $file = $self->pre_commit_file;
         open my $fh, '>', $file;
         print {$fh} 'foo' or die $!;
         close $fh;
@@ -57,7 +58,7 @@ my $logger
     );
 
     my $signal_file = $tempdir->file('signal');
-    if ( my $pid = $pm->start() ) {
+    if ( my $pid = $pm->start ) {
         undef $step;
         touch $signal_file;
     }
@@ -65,7 +66,7 @@ my $logger
         _run_child( $pm, $signal_file, $step );
     }
 
-    $pm->wait_all_children();
+    $pm->wait_all_children;
 
     is( $exit_code, 0, 'child process exited without error' );
     is_deeply(
@@ -75,7 +76,7 @@ my $logger
     );
 
     if ( -f $file ) {
-        is( $file->slurp(), 'foo', 'step wrote expected contents to file' );
+        is( $file->slurp, 'foo', 'step wrote expected contents to file' );
     }
 }
 
@@ -97,7 +98,7 @@ sub _run_child {
 
     my $error;
     try {
-        $step->run();
+        $step->run;
     }
     catch {
         $error = "$_";

@@ -19,10 +19,10 @@ override new => sub {
     local $Carp::CarpLevel = $Carp::CarpLevel + 1;
     carp
         'The Stepford::Planner class has been renamed to Stepford::Runner - use Stepford::Runner';
-    return super();
+    return super;
 };
 
-__PACKAGE__->meta()->make_immutable( inline_constructor => 0 );
+__PACKAGE__->meta->make_immutable( inline_constructor => 0 );
 
 1;
 

@@ -20,12 +20,12 @@ sub last_run_time {
 sub run {
     my $self = shift;
 
-    $self->logger()->info('Completed execution');
+    $self->logger->info('Completed execution');
 
     return;
 }
 
-__PACKAGE__->meta()->make_immutable();
+__PACKAGE__->meta->make_immutable;
 
 1;
 
@@ -40,4 +40,4 @@ __END__
 =head1 DESCRIPTION
 
 This step just logs the message "Completed execution". It is always run as the
-last step when calling C<run()> on a L<Stepford::Runner> object.
+last step when calling C<run> on a L<Stepford::Runner> object.

@@ -1,3 +1,4 @@
+## no critic (Moose::RequireCleanNamespace, Moose::RequireMakeImmutable, Modules::ProhibitMultiplePackages)
 use strict;
 use warnings;
 
@@ -52,13 +53,13 @@ $logger->add($logger_output);
 }
 
 is_deeply(
-    [ sort map { $_->name() } Step1->dependencies() ],
+    [ sort map { $_->name } Step1->dependencies ],
     [qw( input_file1 input_file2)],
     'Step1->dependencies returns the expected attributes'
 );
 
 is_deeply(
-    [ sort map { $_->name() } Step1->productions() ],
+    [ sort map { $_->name } Step1->productions ],
     [qw( output_file1 output_file2)],
     'Step1->productions returns the expected attributes'
 );
@@ -93,10 +94,10 @@ is_deeply(
 
         $self->logger->debug('Touching file');
 
-        $self->output_file1()->touch();
-        utime 100, 100, $self->output_file1();
+        $self->output_file1->touch;
+        utime 100, 100, $self->output_file1 or die $!;
 
-        $self->output_file2()->touch();
+        $self->output_file2->touch;
     }
 }
 
@@ -107,14 +108,14 @@ is_deeply(
     );
 
     is(
-        $step->last_run_time(), undef,
+        $step->last_run_time, undef,
         q{no last run time when output files don't exist}
     );
 
-    $step->run();
+    $step->run;
     is(
-        $step->last_run_time(),
-        ( stat $step->output_file2() )[9],
+        $step->last_run_time,
+        ( stat $step->output_file2 )[9],
         'last_run_time matches mtime of $step->output_file2'
     );
 
@@ -163,7 +164,7 @@ is_deeply(
             \QStepford::Role::Step::FileGenerator role but contains \E
             \Qthe following productions which are not files: output1 output2\E
            /x,
-        'FileStep::Bad->new() dies because it has productions which are not files'
+        'FileStep::Bad->new dies because it has productions which are not files'
     );
 }
 

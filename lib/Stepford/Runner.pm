@@ -7,6 +7,7 @@ use namespace::autoclean;
 our $VERSION = '0.003008';
 
 use List::AllUtils qw( first max );
+use Memory::Stats;
 use Module::Pluggable::Object;
 use MooseX::Params::Validate qw( validated_list );
 use Parallel::ForkManager;
@@ -48,6 +49,16 @@ has jobs => (
     default => 1,
 );
 
+has _memory_stats => (
+    is      => 'ro',
+    isa     => 'Memory::Stats',
+    default => sub {
+        my $s = Memory::Stats->new;
+        $s->start;
+        $s;
+    },
+);
+
 has _step_classes => (
     is       => 'ro',
     isa      => ArrayOfSteps,
@@ -57,11 +68,11 @@ has _step_classes => (
 );
 
 # We want to preload all the step classes so that the final_steps passed to
-# run() are recognized as valid classes.
+# run are recognized as valid classes.
 sub BUILD {
     my $self = shift;
 
-    $self->_step_classes();
+    $self->_step_classes;
 
     return;
 }
@@ -86,7 +97,7 @@ sub run {
 
     my $plan = $self->_make_plan($final_steps);
 
-    if ( $self->jobs() > 1 ) {
+    if ( $self->jobs > 1 ) {
         $self->_run_parallel( $plan, $config, $force_step_execution );
     }
     else {
@@ -104,11 +115,11 @@ sub _run_sequential {
 
     my $state = Stepford::Runner::State->new(
         force_step_execution => $force_step_execution,
-        logger               => $self->logger(),
+        logger               => $self->logger,
     );
 
-    for my $set ( $plan->step_sets() ) {
-        $state->start_step_set();
+    for my $set ( $plan->step_sets ) {
+        $state->start_step_set;
 
         for my $class ( @{$set} ) {
             $self->_run_step_in_process( $state, $class, $config );
@@ -122,11 +133,11 @@ sub _run_parallel {
     my $config               = shift;
     my $force_step_execution = shift;
 
-    my $pm = Parallel::ForkManager->new( $self->jobs() );
+    my $pm = Parallel::ForkManager->new( $self->jobs );
 
     my $state = Stepford::Runner::State->new(
         force_step_execution => $force_step_execution,
-        logger               => $self->logger(),
+        logger               => $self->logger,
     );
     $pm->run_on_finish(
         sub {
@@ -134,19 +145,19 @@ sub _run_parallel {
                 = @_[ 0 .. 3, 5 ];
 
             if ($exit_code) {
-                $pm->wait_all_children();
+                $pm->wait_all_children;
                 die "Child process $pid failed while running step $step_name"
                     . " (exited with code $exit_code)";
             }
             elsif ( !$message ) {
-                $pm->wait_all_children();
+                $pm->wait_all_children;
                 my $error = "Child process $pid did not send back any data";
                 $error .= " while running step $step_name";
                 $error .= " (exited because of signal $signal)" if $signal;
                 die $error;
             }
             elsif ( $message->{error} ) {
-                $pm->wait_all_children();
+                $pm->wait_all_children;
                 die "Child process $pid died"
                     . " while running step $step_name"
                     . " with error:\n$message->{error}";
@@ -158,8 +169,8 @@ sub _run_parallel {
         }
     );
 
-    for my $set ( $plan->step_sets() ) {
-        $state->start_step_set();
+    for my $set ( $plan->step_sets ) {
+        $state->start_step_set;
 
         for my $class ( @{$set} ) {
             if ( $class->does('Stepford::Role::Step::Unserializable') ) {
@@ -167,23 +178,22 @@ sub _run_parallel {
                 next;
             }
 
-            my $step = $state->make_step_object( $class, $config );
+            my $step = $self->_make_step_object( $state, $class, $config );
 
             if ( $state->step_is_up_to_date($step) ) {
-                $state->record_run_time( $step->last_run_time() );
-                $state->record_productions( $step->productions_as_hashref() );
+                $state->record_run_time( $step->last_run_time );
+                $state->record_productions( $step->productions_as_hashref );
                 next;
             }
 
             if ( my $pid = $pm->start($class) ) {
-                $self->logger()
-                    ->debug("Forked child to run $class - pid $pid");
+                $self->logger->debug("Forked child to run $class - pid $pid");
                 next;
             }
 
             my $error;
             try {
-                $step->run();
+                $step->run;
             }
             catch {
                 $error = $_;
@@ -193,15 +203,15 @@ sub _run_parallel {
                 = defined $error
                 ? ( error => $error . q{} )
                 : (
-                last_run_time => scalar $step->last_run_time(),
-                productions   => $step->productions_as_hashref(),
+                last_run_time => scalar $step->last_run_time,
+                productions   => $step->productions_as_hashref,
                 );
 
             $pm->finish( 0, \%message );
         }
 
-        $self->logger()->debug('Waiting for children');
-        $pm->wait_all_children();
+        $self->logger->debug('Waiting for children');
+        $pm->wait_all_children;
     }
 }
 
@@ -211,15 +221,56 @@ sub _run_step_in_process {
     my $class  = shift;
     my $config = shift;
 
-    my $step = $state->make_step_object( $class, $config );
+    my $step = $self->_make_step_object( $state, $class, $config );
 
-    $step->run()
+    $step->run
         unless $state->step_is_up_to_date($step);
 
-    $state->record_run_time( $step->last_run_time() );
-    $state->record_productions( $step->productions_as_hashref() );
+    $state->record_run_time( $step->last_run_time );
+    $state->record_productions( $step->productions_as_hashref );
 
     return;
+}
+
+sub _make_step_object {
+    my $self   = shift;
+    my $state  = shift;
+    my $class  = shift;
+    my $config = shift;
+
+    $self->_log_memory_usage("Before constructing $class");
+
+    my $step = $state->make_step_object( $class, $config );
+
+    $self->_log_memory_usage("After constructing $class");
+
+    return $step;
+}
+
+sub _log_memory_usage {
+    my $self       = shift;
+    my $checkpoint = shift;
+
+    $self->_memory_stats->checkpoint($checkpoint);
+
+    # There's no way to get the total use so far without calling stop(), which
+    # is quite annoying. See
+    # https://github.com/celogeek/perl-memory-stats/issues/3.
+
+    ## no critic (Subroutines::ProtectPrivateSubs)
+    $self->logger->info(
+        sprintf(
+            'Total memory use since Stepford started is %d',
+            $self->_memory_stats->_memory_usage->[-1][1]
+                - $self->_memory_stats->_memory_usage->[0][1]
+        )
+    );
+    $self->logger->info(
+        sprintf(
+            'Memory since last checked is %d',
+            $self->_memory_stats->delta_usage
+        )
+    );
 }
 
 sub _make_plan {
@@ -227,9 +278,9 @@ sub _make_plan {
     my $final_steps = shift;
 
     return Stepford::Plan->new(
-        step_classes => $self->_step_classes(),
+        step_classes => $self->_step_classes,
         final_steps  => $final_steps,
-        logger       => $self->logger(),
+        logger       => $self->logger,
     );
 }
 
@@ -238,15 +289,15 @@ sub _build_step_classes {
 
     # Module::Pluggable does not document whether it returns class names in
     # any specific order.
-    my $sorter = $self->_step_class_sorter();
+    my $sorter = $self->_step_class_sorter;
 
     my @classes;
 
     for my $class (
         sort { $sorter->() } Module::Pluggable::Object->new(
-            search_path => [ $self->step_namespaces() ],
+            search_path => [ $self->step_namespaces ],
             require     => 1,
-        )->plugins()
+        )->plugins
         ) {
 
         # We need to skip roles
@@ -258,7 +309,7 @@ sub _build_step_classes {
             );
         }
 
-        $self->logger()->debug("Found step class $class");
+        $self->logger->debug("Found step class $class");
         push @classes, $class;
     }
 
@@ -269,7 +320,7 @@ sub _step_class_sorter {
     my $self = shift;
 
     my $x          = 0;
-    my @namespaces = $self->step_namespaces();
+    my @namespaces = $self->step_namespaces;
     my %order      = map { $_ => $x++ } @namespaces;
 
     return sub {
@@ -289,7 +340,7 @@ sub _build_logger {
         outputs => [ [ Null => min_level => 'emerg' ] ] );
 }
 
-__PACKAGE__->meta()->make_immutable();
+__PACKAGE__->meta->make_immutable;
 
 1;
 
@@ -371,8 +422,8 @@ runner will run steps in parallel, up to the value you set.
 
 This argument is optional.
 
-This should be an object that provides C<debug()>, C<info()>, C<notice()>,
-C<warning()>, and C<error()> methods.
+This should be an object that provides C<debug>, C<info>, C<notice>,
+C<warning>, and C<error> methods.
 
 This object will receive log messages from the runner and (possibly your
 steps).
@@ -386,7 +437,7 @@ load L<Log::Dispatch> into memory.
 
 =back
 
-=head2 $runner->run()
+=head2 $runner->run
 
 When this method is called, the runner comes up with a plan of the steps
 needed to get to the requested final steps.
@@ -397,13 +448,13 @@ for unsatisfied dependencies for steps in the plan. Finally, we check to make
 sure that no step provides its own dependencies as productions.
 
 For each step, the runner checks if it is up to date compared to its
-dependencies (as determined by the C<< $step->last_run_time() >> method. If
-the step is up to date, it is skipped, otherwise the runner calls C<<
-$step->run() >> on the step. You can avoid this check and force all steps to
-be executed with the C< force_step_execution > parameter (documented below.)
+dependencies (as determined by the C<< $step->last_run_time >> method. If the
+step is up to date, it is skipped, otherwise the runner calls C<< $step->run
+>> on the step. You can avoid this check and force all steps to be executed
+with the C< force_step_execution > parameter (documented below.)
 
 Note that the step objects are always I<constructed>, so you should avoid
-doing a lot of work in your constructor. Save that for the C<run()> method.
+doing a lot of work in your constructor. Save that for the C<run> method.
 
 This method accepts the following parameters:
 
@@ -417,7 +468,7 @@ This can either be a string or an array reference of strings. Each string
 should be a step's class name. These classes must do the
 L<Stepford::Role::Step> role.
 
-These are the final steps run when the C<< $runner->run() >> method is
+These are the final steps run when the C<< $runner->run >> method is
 called.
 
 =item * config
@@ -442,12 +493,12 @@ steps depend on it during execution.
 
 =back
 
-=head2 $runner->step_namespaces()
+=head2 $runner->step_namespaces
 
 This method returns the step namespaces passed to the constructor as a list
 (not an arrayref).
 
-=head2 $runner->logger()
+=head2 $runner->logger
 
 This method returns the C<logger> used by the runner, either what you passed
 to the constructor or a default.
