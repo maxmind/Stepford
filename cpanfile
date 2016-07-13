@@ -4,6 +4,7 @@ requires "Forest::Tree" => "0";
 requires "List::AllUtils" => "0";
 requires "Log::Dispatch" => "0";
 requires "Log::Dispatch::Null" => "0";
+requires "Memory::Stats" => "0";
 requires "Module::Pluggable::Object" => "0";
 requires "Moose" => "0";
 requires "Moose::Role" => "0";
@@ -54,6 +55,7 @@ on 'configure' => sub {
 };
 
 on 'develop' => sub {
+  requires "Code::TidyAll::Plugin::Test::Vars" => "0";
   requires "File::Spec" => "0";
   requires "IO::Handle" => "0";
   requires "IPC::Open3" => "0";
@@ -68,6 +70,7 @@ on 'develop' => sub {
   requires "Test::NoTabs" => "0";
   requires "Test::Pod" => "1.41";
   requires "Test::Pod::Coverage" => "1.08";
+  requires "Test::Portability::Files" => "0";
   requires "Test::Spelling" => "0.12";
   requires "Test::Version" => "1";
 };
