@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+- Make Memory::Stats optional (since not all platforms can reliably install
+  it)
+
+
 0.003008 2016-07-13
 
 - Log output at the info level now includes details of memory usage as before

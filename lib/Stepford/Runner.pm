@@ -7,7 +7,6 @@ use namespace::autoclean;
 our $VERSION = '0.003009';
 
 use List::AllUtils qw( first max );
-use Memory::Stats;
 use Module::Pluggable::Object;
 use MooseX::Params::Validate qw( validated_list );
 use Parallel::ForkManager;
@@ -17,7 +16,7 @@ use Stepford::Plan;
 use Stepford::Runner::State;
 use Stepford::Types qw(
     ArrayOfClassPrefixes ArrayOfSteps Bool ClassName
-    HashRef Logger PositiveInt Step
+    HashRef Logger Maybe PositiveInt Step
 );
 use Try::Tiny;
 
@@ -51,11 +50,18 @@ has jobs => (
 
 has _memory_stats => (
     is      => 'ro',
-    isa     => 'Memory::Stats',
+    isa     => Maybe ['Memory::Stats'],
     default => sub {
-        my $s = Memory::Stats->new;
-        $s->start;
-        $s;
+        return try {
+            require Memory::Stats;
+            my $s = Memory::Stats->new;
+            $s->start;
+            $s;
+        }
+        catch {
+            undef;
+        }
+
     },
 );
 
@@ -250,6 +256,8 @@ sub _make_step_object {
 sub _log_memory_usage {
     my $self       = shift;
     my $checkpoint = shift;
+
+    return unless $self->_memory_stats;
 
     $self->_memory_stats->checkpoint($checkpoint);
 
