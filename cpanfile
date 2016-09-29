@@ -4,7 +4,6 @@ requires "Forest::Tree" => "0";
 requires "List::AllUtils" => "0";
 requires "Log::Dispatch" => "0";
 requires "Log::Dispatch::Null" => "0";
-requires "Memory::Stats" => "0";
 requires "Module::Pluggable::Object" => "0";
 requires "Moose" => "0";
 requires "Moose::Role" => "0";
@@ -28,6 +27,7 @@ requires "parent" => "0";
 requires "perl" => "5.010";
 requires "strict" => "0";
 requires "warnings" => "0";
+recommends "Memory::Stats" => "0";
 
 on 'test' => sub {
   requires "ExtUtils::MakeMaker" => "0";
@@ -56,6 +56,7 @@ on 'configure' => sub {
 
 on 'develop' => sub {
   requires "Code::TidyAll::Plugin::Test::Vars" => "0";
+  requires "Devel::Hide" => "0";
   requires "File::Spec" => "0";
   requires "IO::Handle" => "0";
   requires "IPC::Open3" => "0";
