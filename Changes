@@ -1,7 +1,7 @@
 {{$NEXT}}
 
 - Make Memory::Stats optional (since not all platforms can reliably install
-  it)
+  it).
 
 
 0.003008 2016-07-13
