@@ -23,6 +23,8 @@ matrix:
   include:
     - env: COVERAGE=1
       perl: '5.24'
+    - env: PERL5OPTS=-MDevel::Hide=Memory::Stats
+      perl: '5.24'
 env:
   global:
     - RELEASE_TESTING=1
