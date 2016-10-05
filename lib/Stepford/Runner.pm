@@ -61,7 +61,6 @@ has _memory_stats => (
         catch {
             undef;
         }
-
     },
 );
 
