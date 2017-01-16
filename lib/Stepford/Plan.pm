@@ -6,10 +6,10 @@ use namespace::autoclean;
 
 our $VERSION = '0.003010';
 
-use Forest::Tree;
 use List::AllUtils qw( all uniq );
 use Stepford::Error;
 use Stepford::FinalStep;
+use Stepford::Runner::StepTree ();
 use Stepford::Types qw( ArrayRef ArrayOfSteps ClassName HashRef Logger Step );
 
 use Moose;
@@ -73,7 +73,7 @@ sub _build_step_sets {
             }
         );
 
-        push @sets, [ sort( uniq( map { $_->node } @leaves ) ) ];
+        push @sets, [ sort( uniq( map { $_->step } @leaves ) ) ];
 
         for my $leaf (@leaves) {
             my $parent = $leaf->parent;
@@ -81,7 +81,7 @@ sub _build_step_sets {
         }
     }
 
-    push @sets, [ $tree->node ];
+    push @sets, [ $tree->step ];
 
     $self->logger->info( 'Plan for '
             . ( join q{ - }, @{ $self->_final_steps } ) . ': '
@@ -93,8 +93,8 @@ sub _build_step_sets {
 sub _make_tree {
     my $self = shift;
 
-    my $tree = Forest::Tree->new(
-        node => 'Stepford::FinalStep',
+    my $tree = Stepford::Runner::StepTree->new(
+        step => 'Stepford::FinalStep',
     );
 
     my %seen;
@@ -114,8 +114,9 @@ sub _add_steps_to_tree {
     for my $step ( @{$steps} ) {
         $self->_check_tree_for_cycle( $tree, $step );
 
-        my $child = Forest::Tree->new(
-            node => $step,
+        my $child = Stepford::Runner::StepTree->new(
+            step   => $step,
+            parent => $tree,
         );
         $tree->add_child($child);
 
@@ -149,7 +150,7 @@ sub _check_tree_for_cycle {
     for ( my $cur = $tree ; $cur ; $cur = $cur->parent ) {
         Stepford::Error->throw(
             "The set of dependencies for $step is cyclical")
-            if $cur->node eq $step;
+            if $cur->step eq $step;
     }
 
     return;
