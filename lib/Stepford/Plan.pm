@@ -41,12 +41,11 @@ has _step_sets => (
     },
 );
 
-has _production_map => (
-    is       => 'ro',
-    isa      => HashRef [Step],
-    init_arg => undef,
-    lazy     => 1,
-    builder  => '_build_production_map',
+has _step_tree => (
+    is      => 'ro',
+    isa     => 'Stepford::Runner::StepTree',
+    lazy    => 1,
+    builder => '_build_step_tree',
 );
 
 has logger => (
@@ -61,7 +60,7 @@ has logger => (
 sub _build_step_sets {
     my $self = shift;
 
-    my $tree = $self->_make_tree;
+    my $tree = $self->_step_tree;
 
     my @sets;
     while ( $tree->child_count ) {
@@ -90,85 +89,28 @@ sub _build_step_sets {
     return \@sets;
 }
 
-sub _make_tree {
+sub _build_step_tree {
     my $self = shift;
 
-    my $tree = Stepford::Runner::StepTree->new(
-        step => 'Stepford::FinalStep',
+    my $final_step = Stepford::Runner::StepTree->new(
+        logger         => $self->logger,
+        step           => 'Stepford::FinalStep',
+        step_classes   => $self->_step_classes,
+        children_steps => [],
     );
 
-    my %seen;
-    $self->_add_steps_to_tree( $tree, $self->_final_steps, \%seen );
-
-    return $tree;
-}
-
-sub _add_steps_to_tree {
-    my $self  = shift;
-    my $tree  = shift;
-    my $steps = shift;
-    my $seen  = shift;
-
-    my $map = $self->_production_map;
-
-    for my $step ( @{$steps} ) {
-        $self->_check_tree_for_cycle( $tree, $step );
-
-        my $child = Stepford::Runner::StepTree->new(
-            step   => $step,
-            parent => $tree,
+    # this is necessary due to the parent param nonsense
+    for my $step ( @{ $self->_final_steps } ) {
+        $final_step->add_child(
+            Stepford::Runner::StepTree->new(
+                logger       => $self->logger,
+                parent       => $final_step,
+                step         => $step,
+                step_classes => $self->_step_classes,
+            )
         );
-        $tree->add_child($child);
-
-        my %deps;
-        for my $dep ( map { $_->name } $step->dependencies ) {
-            Stepford::Error->throw(
-                      "Cannot resolve a dependency for $step."
-                    . " There is no step that produces the $dep attribute." )
-                unless $map->{$dep};
-
-            Stepford::Error->throw(
-                "A dependency ($dep) for $step resolved to the same step.")
-                if $map->{$dep} eq $step;
-
-            $self->logger->debug(
-                "Dependency $dep for $step is provided by $map->{$dep}");
-
-            $deps{ $map->{$dep} } = 1;
-        }
-
-        $self->_add_steps_to_tree( $child, [ keys %deps ], $seen );
     }
-}
-
-sub _check_tree_for_cycle {
-    my $self = shift;
-    my $tree = shift;
-    my $step = shift;
-
-    ## no critic (ControlStructures::ProhibitCStyleForLoops)
-    for ( my $cur = $tree ; $cur ; $cur = $cur->parent ) {
-        Stepford::Error->throw(
-            "The set of dependencies for $step is cyclical")
-            if $cur->step eq $step;
-    }
-
-    return;
-}
-
-sub _build_production_map {
-    my $self = shift;
-
-    my %map;
-    for my $class ( @{ $self->_step_classes } ) {
-        for my $attr ( map { $_->name } $class->productions ) {
-            next if exists $map{$attr};
-
-            $map{$attr} = $class;
-        }
-    }
-
-    return \%map;
+    return $final_step;
 }
 
 sub _step_sets_as_string {

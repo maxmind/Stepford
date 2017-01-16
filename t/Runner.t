@@ -311,7 +311,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
     like(
         $e,
-        qr/\QThe set of dependencies for Test3::Step::\E(?:A|B)\Q is cyclical/,
+        qr/cyclic/,
         'cyclical dependencies cause the Planner constructor to die'
     );
 }
@@ -422,7 +422,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
     )->_make_plan( ['Test6::Step::A2'] );
 
     is(
-        $plan->_production_map->{thing_a},
+        $plan->_step_tree->_production_map->{thing_a},
         'Test6::Step::A1',
         'when two steps have the same production, choose the one that sorts first'
     );
