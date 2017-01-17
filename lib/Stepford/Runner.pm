@@ -48,22 +48,6 @@ has jobs => (
     default => 1,
 );
 
-has _memory_stats => (
-    is      => 'ro',
-    isa     => Maybe ['Memory::Stats'],
-    default => sub {
-        return try {
-            require Memory::Stats;
-            my $s = Memory::Stats->new;
-            $s->start;
-            $s;
-        }
-        catch {
-            undef;
-        }
-    },
-);
-
 has _step_classes => (
     is       => 'ro',
     isa      => ArrayOfSteps,
@@ -100,13 +84,13 @@ sub run {
         }
     );
 
-    my $plan = $self->_make_plan($final_steps);
+    my $plan = $self->_make_plan( $final_steps, $config );
 
     if ( $self->jobs > 1 ) {
-        $self->_run_parallel( $plan, $config, $force_step_execution );
+        $self->_run_parallel( $plan, $force_step_execution );
     }
     else {
-        $self->_run_sequential( $plan, $config, $force_step_execution );
+        $self->_run_sequential( $plan, $force_step_execution );
     }
 
     return;
@@ -115,27 +99,29 @@ sub run {
 sub _run_sequential {
     my $self                 = shift;
     my $plan                 = shift;
-    my $config               = shift;
     my $force_step_execution = shift;
 
-    my $state = Stepford::Runner::State->new(
-        force_step_execution => $force_step_execution,
-        logger               => $self->logger,
-    );
+    ## XXX - handle force-execution
 
-    for my $set ( $plan->step_sets ) {
-        $state->start_step_set;
+    my %ran;
 
-        for my $class ( @{$set} ) {
-            $self->_run_step_in_process( $state, $class, $config );
+    # XXX - temp
+    $plan->step_tree->traverse(
+        sub {
+            my $step_tree = shift;
+
+            return if $ran{ $step_tree->step };
+
+            $self->_run_step_in_process( $step_tree, $force_step_execution );
+            $ran{ $step_tree->step } = 1;
+            return;
         }
-    }
+    );
 }
 
 sub _run_parallel {
     my $self                 = shift;
     my $plan                 = shift;
-    my $config               = shift;
     my $force_step_execution = shift;
 
     my $pm = Parallel::ForkManager->new( $self->jobs );
@@ -174,31 +160,40 @@ sub _run_parallel {
         }
     );
 
-    for my $set ( $plan->step_sets ) {
-        $state->start_step_set;
+    my %ran;
 
-        for my $class ( @{$set} ) {
+    $plan->step_tree->traverse(
+        sub {
+            my $step_tree = shift;
+
+            my $class = $step_tree->step;
+            return if $ran{$class};
+
             if ( $class->does('Stepford::Role::Step::Unserializable') ) {
-                $self->_run_step_in_process( $state, $class, $config );
-                next;
-            }
-
-            my $step = $self->_make_step_object( $state, $class, $config );
-
-            if ( $state->step_is_up_to_date($step) ) {
-                $state->record_run_time( $step->last_run_time );
-                $state->record_productions( $step->productions_as_hashref );
-                next;
+                $self->_run_step_in_process(
+                    $step_tree,
+                    $force_step_execution
+                );
+                $ran{ $step_tree->step } = 1;
+                return;
             }
 
             if ( my $pid = $pm->start($class) ) {
+
+                # parent
+                $ran{ $step_tree->step } = 1;
+
                 $self->logger->debug("Forked child to run $class - pid $pid");
-                next;
+                return;
             }
 
+            # child
             my $error;
             try {
-                $step->run;
+                $self->_run_step_in_process(
+                    $step_tree,
+                    $force_step_execution
+                );
             }
             catch {
                 $error = $_;
@@ -208,83 +203,46 @@ sub _run_parallel {
                 = defined $error
                 ? ( error => $error . q{} )
                 : (
-                last_run_time => scalar $step->last_run_time,
-                productions   => $step->productions_as_hashref,
+                last_run_time => scalar $step_tree->last_run_time,
+                productions   => $step_tree->step_productions_as_hashref,
                 );
 
             $pm->finish( 0, \%message );
         }
+    );
 
-        $self->logger->debug('Waiting for children');
-        $pm->wait_all_children;
-    }
+    $self->logger->debug('Waiting for children');
+    $pm->wait_all_children;
 }
 
 sub _run_step_in_process {
-    my $self   = shift;
-    my $state  = shift;
-    my $class  = shift;
-    my $config = shift;
+    my $self                 = shift;
+    my $step_tree            = shift;
+    my $force_step_execution = shift;
 
-    my $step = $self->_make_step_object( $state, $class, $config );
+    # XXX -
+    my $step = $step_tree->_step_object;
 
-    $step->run
-        unless $state->step_is_up_to_date($step);
+    if (  !$force_step_execution
+        && $step_tree->is_up_to_date( $step, $self->logger ) ) {
+        $self->logger->info( 'Skipping ' . $step_tree->step );
+        return;
+    }
 
-    $state->record_run_time( $step->last_run_time );
-    $state->record_productions( $step->productions_as_hashref );
+    $self->logger->info( 'Running ' . $step_tree->step );
+
+    $step->run;
 
     return;
-}
-
-sub _make_step_object {
-    my $self   = shift;
-    my $state  = shift;
-    my $class  = shift;
-    my $config = shift;
-
-    $self->_log_memory_usage("Before constructing $class");
-
-    my $step = $state->make_step_object( $class, $config );
-
-    $self->_log_memory_usage("After constructing $class");
-
-    return $step;
-}
-
-sub _log_memory_usage {
-    my $self       = shift;
-    my $checkpoint = shift;
-
-    return unless $self->_memory_stats;
-
-    $self->_memory_stats->checkpoint($checkpoint);
-
-    # There's no way to get the total use so far without calling stop(), which
-    # is quite annoying. See
-    # https://github.com/celogeek/perl-memory-stats/issues/3.
-
-    ## no critic (Subroutines::ProtectPrivateSubs)
-    $self->logger->info(
-        sprintf(
-            'Total memory use since Stepford started is %d',
-            $self->_memory_stats->_memory_usage->[-1][1]
-                - $self->_memory_stats->_memory_usage->[0][1]
-        )
-    );
-    $self->logger->info(
-        sprintf(
-            'Memory since last checked is %d',
-            $self->_memory_stats->delta_usage
-        )
-    );
 }
 
 sub _make_plan {
     my $self        = shift;
     my $final_steps = shift;
+    my $config      = shift;
 
     return Stepford::Plan->new(
+        config       => $config,
         step_classes => $self->_step_classes,
         final_steps  => $final_steps,
         logger       => $self->logger,

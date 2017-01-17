@@ -54,7 +54,7 @@ my $ran_step_3;
         $ran_step_2 = 1;
     }
 
-    sub last_run_time {1}
+    sub last_run_time { 1 }
 }
 
 {
@@ -62,13 +62,6 @@ my $ran_step_3;
     use Moose;
     use Stepford::Types qw( Str );
     with 'Stepford::Role::Step';
-
-    has str1 => (
-        traits   => ['StepDependency'],
-        is       => 'ro',
-        isa      => Str,
-        required => 1,
-    );
 
     has str2 => (
         traits   => ['StepDependency'],
@@ -88,22 +81,24 @@ my $ran_step_3;
         $ran_step_3 = 1;
     }
 
-    sub last_run_time {2}
+    sub last_run_time { 2 }
 }
 
 {
     my $runner = Stepford::Runner->new(
         step_namespaces => 'Test::Step',
-        jobs => 2,
     );
 
     $runner->run(
         final_steps => 'Test::Step::Step3',
     );
 
-    ok($ran_step_1, 'Step 1 with undef last_run_time ran');
-    ok($ran_step_2, 'Step 2 with dependency with undef last_run_time');
-    ok(!$ran_step_3, 'Step 3 with dependency with older last_run_time did not run');
+    ok( $ran_step_1, 'Step 1 with undef last_run_time ran' );
+    ok( $ran_step_2, 'Step 2 with dependency with undef last_run_time' );
+    ok(
+        !$ran_step_3,
+        'Step 3 with dependency with older last_run_time did not run'
+    );
 }
 
 done_testing();

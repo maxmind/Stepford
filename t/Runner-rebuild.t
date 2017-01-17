@@ -55,7 +55,7 @@ my $ran_step_3;
     }
 
     # This should be rebuilt as its dep is newer
-    sub last_run_time {3}
+    sub last_run_time { 3 }
 }
 
 {
@@ -90,22 +90,21 @@ my $ran_step_3;
     }
 
     # This should be rebuilt as Step1 is newer
-    sub last_run_time {4}
+    sub last_run_time { 4 }
 }
 
 {
     my $runner = Stepford::Runner->new(
         step_namespaces => 'Test::Step',
-        jobs => 2,
     );
 
     $runner->run(
         final_steps => 'Test::Step::Step3',
     );
 
-    ok(!$ran_step_1, 'Step 1 not rebuilt');
-    ok($ran_step_2, 'Step 2 rebuilt as Step 1 is newer');
-    ok($ran_step_3, 'Step 3 rebuilt as Step 1 is newer');
+    ok( !$ran_step_1, 'Step 1 not rebuilt' );
+    ok( $ran_step_2,  'Step 2 rebuilt as Step 1 is newer' );
+    ok( $ran_step_3,  'Step 3 rebuilt as Step 1 is newer' );
 }
 
 done_testing();
