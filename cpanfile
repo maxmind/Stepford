@@ -1,6 +1,5 @@
 requires "Carp" => "0";
 requires "File::Temp" => "0";
-requires "Forest::Tree" => "0";
 requires "List::AllUtils" => "0";
 requires "Log::Dispatch" => "0";
 requires "Log::Dispatch::Null" => "0";
@@ -19,6 +18,7 @@ requires "Parallel::ForkManager" => "0";
 requires "Path::Class" => "0";
 requires "Scalar::Util" => "0";
 requires "Scope::Guard" => "0";
+requires "Stepford::Runner::State" => "0";
 requires "Throwable::Error" => "0";
 requires "Time::HiRes" => "1.9726";
 requires "Try::Tiny" => "0";
