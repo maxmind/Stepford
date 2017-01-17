@@ -65,7 +65,6 @@ sub _build_step_tree {
             Stepford::Runner::StepTree->new(
                 config       => $self->config,
                 logger       => $self->logger,
-                parent       => $final_step,
                 step         => $step,
                 step_classes => $self->_step_classes,
             )

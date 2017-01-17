@@ -13,7 +13,6 @@ use Parallel::ForkManager;
 use Scalar::Util qw( blessed );
 use Stepford::Error;
 use Stepford::Plan;
-use Stepford::Runner::State;
 use Stepford::Types qw(
     ArrayOfClassPrefixes ArrayOfSteps Bool ClassName
     HashRef Logger Maybe PositiveInt Step
@@ -126,10 +125,10 @@ sub _run_parallel {
 
     my $pm = Parallel::ForkManager->new( $self->jobs );
 
-    my $state = Stepford::Runner::State->new(
-        force_step_execution => $force_step_execution,
-        logger               => $self->logger,
-    );
+    # XXX - these are currently by child PIDs, but there is not reason why
+    # we could not use an ID that is less likely to result in a collision.
+    my %trees;
+
     $pm->run_on_finish(
         sub {
             my ( $pid, $exit_code, $step_name, $signal, $message )
@@ -154,8 +153,13 @@ sub _run_parallel {
                     . " with error:\n$message->{error}";
             }
             else {
-                $state->record_run_time( $message->{last_run_time} );
-                $state->record_productions( $message->{productions} );
+                my $step_tree = $trees{$pid};
+                die "Could not find step tree for $pid"
+                    unless defined $step_tree;
+
+                $step_tree->set_last_run_time( $message->{last_run_time} );
+                $step_tree->set_step_productions_as_hashref(
+                    $message->{productions} );
             }
         }
     );
@@ -181,6 +185,10 @@ sub _run_parallel {
             if ( my $pid = $pm->start($class) ) {
 
                 # parent
+                die "PID $pid reused for $class and $trees{$pid}"
+                    if exists $trees{pid};
+
+                $trees{$pid} = $step_tree;
                 $ran{ $step_tree->step } = 1;
 
                 $self->logger->debug("Forked child to run $class - pid $pid");

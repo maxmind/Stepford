@@ -9,7 +9,7 @@ our $VERSION = '0.003010';
 use List::AllUtils qw( all any first_index max sort_by );
 use Scalar::Util qw( refaddr );
 use Stepford::Error;
-use Stepford::Types qw( ArrayOfSteps ArrayRef HashRef Logger Maybe Step );
+use Stepford::Types qw( ArrayOfSteps ArrayRef HashRef Logger Maybe Num Step );
 use Try::Tiny qw( catch try );
 
 use Moose;
@@ -45,17 +45,22 @@ has _step_object => (
     isa     => Step,
     lazy    => 1,
     builder => '_build_step_object',
-    handles => {
-        last_run_time               => 'last_run_time',
-        step_productions_as_hashref => 'productions_as_hashref',
-    },
 );
 
-# XXX - this really should not be necessary
-has parent => (
-    is       => 'ro',
-    isa      => Maybe ['Stepford::Runner::StepTree'],
-    weak_ref => 1,
+has last_run_time => (
+    is      => 'ro',
+    isa     => Maybe [Num],
+    writer  => 'set_last_run_time',
+    lazy    => 1,
+    default => sub { shift->_step_object->last_run_time },
+);
+
+has step_productions_as_hashref => (
+    is      => 'ro',
+    isa     => HashRef,
+    writer  => 'set_step_productions_as_hashref',
+    lazy    => 1,
+    default => sub { shift->_step_object->productions_as_hashref },
 );
 
 has _children_steps => (
@@ -71,10 +76,7 @@ has _children_steps => (
 
         # XXX - the code should be refactored so modifying the tree is not
         # necessary
-        add_child       => 'push',
-        child_count     => 'count',
-        is_leaf         => 'is_empty',
-        remove_child_at => 'delete',
+        add_child => 'push',
     },
 );
 
@@ -170,7 +172,6 @@ sub _build_children_steps {
             logger       => $self->logger,
             step         => $child_step,
             step_classes => \@step_classes,
-            parent       => $self,
         );
     }
 
