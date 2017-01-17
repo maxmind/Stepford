@@ -51,6 +51,7 @@ has last_run_time => (
     is      => 'ro',
     isa     => Maybe [Num],
     writer  => 'set_last_run_time',
+    clearer => '_clear_last_run_time',
     lazy    => 1,
     default => sub { shift->_step_object->last_run_time },
 );
@@ -59,6 +60,7 @@ has step_productions_as_hashref => (
     is      => 'ro',
     isa     => HashRef,
     writer  => 'set_step_productions_as_hashref',
+    clearer => '_clear_step_productions_as_hashref',
     lazy    => 1,
     default => sub { shift->_step_object->productions_as_hashref },
 );
@@ -185,13 +187,13 @@ sub is_up_to_date {
     my $class = $self->step;
 
     unless ( defined $self->last_run_time ) {
-        $self->logger->debug("No last run time for $class.")
+        $logger->debug("No last run time for $class.")
             if $logger;
         return 0;
     }
 
     unless ( @{ $self->_children_steps } ) {
-        $self->logger->debug("No previous steps for $class.")
+        $logger->debug("No previous steps for $class.")
             if $logger;
         return 1;
     }
@@ -206,21 +208,21 @@ sub is_up_to_date {
         = map { $_->last_run_time } @{ $self->_children_steps };
 
     unless ( all { defined } @children_last_run_times ) {
-        $self->logger->debug(
+        $logger->debug(
             "A previous step for $class does not have a last run time.")
             if $logger;
         return 0;
     }
 
     my $max_previous_step_last_run_time = max(@children_last_run_times);
-    $self->logger->info( "Last run time for $class is "
+    $logger->info( "Last run time for $class is "
             . $self->last_run_time
             . ". Previous steps last run time is $max_previous_step_last_run_time."
     ) if $logger;
     my $step_is_up_to_date
         = $self->last_run_time > $max_previous_step_last_run_time;
 
-    $self->logger->info( "$class is "
+    $logger->info( "$class is "
             . ( $step_is_up_to_date ? q{} : 'not ' )
             . 'up to date.' )
         if $logger;
@@ -278,6 +280,14 @@ sub _constructor_args_for_class {
     $args{logger} = $self->logger;
 
     return \%args;
+}
+
+sub run_step {
+    my $self = shift;
+
+    $self->_step_object->run;
+    $self->_clear_last_run_time;
+    $self->_clear_step_productions_as_hashref;
 }
 
 sub productions {

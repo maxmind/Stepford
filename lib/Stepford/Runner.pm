@@ -228,18 +228,15 @@ sub _run_step_in_process {
     my $step_tree            = shift;
     my $force_step_execution = shift;
 
-    # XXX -
-    my $step = $step_tree->_step_object;
-
     if (  !$force_step_execution
-        && $step_tree->is_up_to_date( $step, $self->logger ) ) {
+        && $step_tree->is_up_to_date( $self->logger ) ) {
         $self->logger->info( 'Skipping ' . $step_tree->step );
         return;
     }
 
     $self->logger->info( 'Running ' . $step_tree->step );
 
-    $step->run;
+    $step_tree->run_step;
 
     return;
 }
