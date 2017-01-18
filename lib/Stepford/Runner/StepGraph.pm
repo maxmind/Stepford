@@ -10,7 +10,6 @@ use List::AllUtils qw( all any first_index max none sort_by );
 use Scalar::Util qw( refaddr );
 use Stepford::Error;
 use Stepford::Types qw(
-    ArrayOfSteps
     ArrayRef
     Bool
     HashRef
@@ -42,13 +41,6 @@ has step => (
     required => 1,
 );
 
-has _step_classes => (
-    is       => 'ro',
-    isa      => ArrayOfSteps,
-    init_arg => 'step_classes',
-    required => 1,
-);
-
 has _step_object => (
     is      => 'ro',
     isa     => Step,
@@ -74,29 +66,12 @@ has step_productions_as_hashref => (
     default => sub { shift->_step_object->productions_as_hashref },
 );
 
-has _children_steps => (
+has _children_step_graphs => (
     traits   => ['Array'],
-    init_arg => 'children_steps',
+    init_arg => 'children_step_graphs',
     is       => 'ro',
     isa      => ArrayRef ['Stepford::Runner::StepGraph'],
-
-    # required => 1,
-    lazy    => 1,
-    builder => '_build_children_steps',
-    handles => {
-
-        # XXX - the code should be refactored so modifying the graph is not
-        # necessary
-        add_child => 'push',
-    },
-);
-
-has _production_map => (
-    is       => 'ro',
-    isa      => HashRef [Step],
-    init_arg => undef,
-    lazy     => 1,
-    builder  => '_build_production_map',
+    required => 1,
 );
 
 has has_been_processed => (
@@ -105,79 +80,6 @@ has has_been_processed => (
     default => 0,
     writer  => 'set_has_been_processed',
 );
-
-sub traverse {
-    my $self = shift;
-    my $cb   = shift;
-
-    $_->traverse($cb) for @{ $self->_children_steps };
-    $cb->($self);
-    return;
-}
-
-sub get_child_index {
-    my $self  = shift;
-    my $child = shift;
-
-    return first_index { refaddr $child eq refaddr $_}
-    @{ $self->_children_steps };
-}
-
-sub _build_production_map {
-    my $self = shift;
-
-    my %map;
-    for my $class ( @{ $self->_step_classes } ) {
-        for my $attr ( map { $_->name } $class->productions ) {
-            next if exists $map{$attr};
-
-            $map{$attr} = $class;
-        }
-    }
-
-    return \%map;
-}
-
-sub _build_children_steps {
-    my $self = shift;
-
-    my $map  = $self->_production_map;
-    my $step = $self->step;
-
-    my @children;
-    my %deps;
-
-    # We remove the current class from step classes for children to prevent
-    # cycles
-    my @step_classes = grep { $step ne $_ } @{ $self->_step_classes };
-
-    for my $dep ( map { $_->name } $step->dependencies ) {
-        Stepford::Error->throw( "Cannot resolve a dependency for $step."
-                . " There is no step that produces the $dep attribute."
-                . ' Do you have a cyclic dependency?' )
-            unless $map->{$dep};
-
-        Stepford::Error->throw(
-            "A dependency ($dep) for $step resolved to the same step.")
-            if $map->{$dep} eq $step;
-
-        $self->logger->debug(
-            "Dependency $dep for $step is provided by $map->{$dep}");
-
-        my $child_step = $map->{$dep};
-        next if exists $deps{$child_step};
-        $deps{$child_step} = 1;
-
-        push @children, Stepford::Runner::StepGraph->new(
-            config       => $self->config,
-            logger       => $self->logger,
-            step         => $child_step,
-            step_classes => \@step_classes,
-        );
-    }
-
-    return [ sort_by { $_->step } @children ];
-}
 
 sub _build_step_object {
     my $self = shift;
@@ -223,6 +125,16 @@ sub _constructor_args_for_class {
     return \%args;
 }
 
+# Note: this is intentionally depth-first traversal
+sub traverse {
+    my $self = shift;
+    my $cb   = shift;
+
+    $_->traverse($cb) for @{ $self->_children_step_graphs };
+    $cb->($self);
+    return;
+}
+
 sub maybe_run_step {
     my $self                 = shift;
     my $force_step_execution = shift;
@@ -265,13 +177,13 @@ sub _is_up_to_date {
         return 0;
     }
 
-    unless ( @{ $self->_children_steps } ) {
+    unless ( @{ $self->_children_step_graphs } ) {
         $self->logger->debug("No previous steps for $class.");
         return 1;
     }
 
     my @children_last_run_times
-        = map { $_->last_run_time } @{ $self->_children_steps };
+        = map { $_->last_run_time } @{ $self->_children_step_graphs };
 
     unless ( all { defined } @children_last_run_times ) {
         $self->logger->debug(
@@ -308,13 +220,13 @@ sub _children_productions {
 
     return
         map { %{ $_->step_productions_as_hashref } }
-        @{ $self->_children_steps };
+        @{ $self->_children_step_graphs };
 }
 
 sub children_have_been_processed {
     my $self = shift;
 
-    all { $_->has_been_processed } @{ $self->_children_steps };
+    all { $_->has_been_processed } @{ $self->_children_step_graphs };
 }
 
 sub is_serializable {
@@ -325,7 +237,7 @@ sub is_serializable {
     none {
         $_->step->does('Stepford::Role::Step::Unserializable')
     }
-    ( $self, @{ $self->_children_steps } );
+    ( $self, @{ $self->_children_step_graphs } );
 }
 
 __PACKAGE__->meta->make_immutable;

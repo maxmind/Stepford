@@ -424,7 +424,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
     ## no critic (Subroutines::ProtectPrivateSubs)
     is(
-        $plan->step_graph->_production_map->{thing_a},
+        $plan->_production_map->{thing_a},
         'Test6::Step::A1',
         'when two steps have the same production, choose the one that sorts first'
     );

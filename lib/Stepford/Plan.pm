@@ -6,7 +6,7 @@ use namespace::autoclean;
 
 our $VERSION = '0.003010';
 
-use List::AllUtils qw( all uniq );
+use List::AllUtils qw( all sort_by uniq );
 use Stepford::Error;
 use Stepford::FinalStep;
 use Stepford::Runner::StepGraph ();
@@ -42,35 +42,124 @@ has step_graph => (
     builder => '_build_step_graph',
 );
 
+has _production_map => (
+    is       => 'ro',
+    isa      => HashRef [Step],
+    init_arg => undef,
+    lazy     => 1,
+    builder  => '_build_production_map',
+);
+
 has logger => (
     is       => 'ro',
     isa      => Logger,
     required => 1,
 );
 
+has _step_graph_cache => (
+    traits  => ['Hash'],
+    is      => 'ro',
+    isa     => HashRef,
+    default => sub { {} },
+    handles => {
+        _cache_step_graph      => 'set',
+        _get_cached_step_graph => 'get',
+    },
+);
+
 sub _build_step_graph {
     my $self = shift;
 
-    my $final_step = Stepford::Runner::StepGraph->new(
-        config         => $self->config,
-        logger         => $self->logger,
-        step           => 'Stepford::FinalStep',
-        step_classes   => $self->_step_classes,
-        children_steps => [],
+    return Stepford::Runner::StepGraph->new(
+        config               => $self->config,
+        logger               => $self->logger,
+        step                 => 'Stepford::FinalStep',
+        children_step_graphs => [
+            sort_by { $_->step }
+            map { $self->_create_step_graph( $_, {} ) }
+                @{ $self->_final_steps }
+        ],
+    );
+}
+
+sub _build_production_map {
+    my $self = shift;
+
+    my %map;
+    for my $class ( @{ $self->_step_classes } ) {
+        for my $attr ( map { $_->name } $class->productions ) {
+            next if exists $map{$attr};
+
+            $map{$attr} = $class;
+        }
+    }
+
+    return \%map;
+}
+
+sub _create_step_graph {
+    my $self    = shift;
+    my $step    = shift;
+    my $parents = shift;
+
+    Stepford::Error->throw("The set of dependencies for $step is cyclical")
+        if exists $parents->{$step};
+
+    my $childrens_parents = {
+        %{$parents},
+        $step => 1,
+    };
+
+    if ( my $step_graph = $self->_get_cached_step_graph($step) ) {
+        return $step_graph;
+    }
+
+    my $step_graph = Stepford::Runner::StepGraph->new(
+        config => $self->config,
+        logger => $self->logger,
+        step   => $step,
+        children_step_graphs =>
+            $self->_create_children_step_graphs( $step, $childrens_parents ),
     );
 
-    # this is necessary due to the parent param nonsense
-    for my $step ( @{ $self->_final_steps } ) {
-        $final_step->add_child(
-            Stepford::Runner::StepGraph->new(
-                config       => $self->config,
-                logger       => $self->logger,
-                step         => $step,
-                step_classes => $self->_step_classes,
-            )
-        );
-    }
-    return $final_step;
+    $self->_cache_step_graph( $step => $step_graph );
+
+    return $step_graph;
+}
+
+sub _create_children_step_graphs {
+    my $self              = shift;
+    my $step              = shift;
+    my $childrens_parents = shift;
+
+    my @children_steps
+        = uniq sort map { $self->_step_for_dependency( $step, $_->name ) }
+        $step->dependencies;
+
+    return [ map { $self->_create_step_graph( $_, $childrens_parents ) }
+            @children_steps ];
+}
+
+sub _step_for_dependency {
+    my $self        = shift;
+    my $parent_step = shift;
+    my $dep         = shift;
+
+    my $map = $self->_production_map;
+
+    Stepford::Error->throw( "Cannot resolve a dependency for $parent_step."
+            . " There is no step that produces the $dep attribute."
+            . ' Do you have a cyclic dependency?' )
+        unless $map->{$dep};
+
+    Stepford::Error->throw(
+        "A dependency ($dep) for $parent_step resolved to the same step.")
+        if $map->{$dep} eq $parent_step;
+
+    $self->logger->debug(
+        "Dependency $dep for $parent_step is provided by $map->{$dep}");
+
+    return $map->{$dep};
 }
 
 __PACKAGE__->meta->make_immutable;
