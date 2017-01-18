@@ -9,7 +9,16 @@ our $VERSION = '0.003010';
 use List::AllUtils qw( all any first_index max sort_by );
 use Scalar::Util qw( refaddr );
 use Stepford::Error;
-use Stepford::Types qw( ArrayOfSteps ArrayRef HashRef Logger Maybe Num Step );
+use Stepford::Types qw(
+    ArrayOfSteps
+    ArrayRef
+    Bool
+    HashRef
+    Logger
+    Maybe
+    Num
+    Step
+);
 use Try::Tiny qw( catch try );
 
 use Moose;
@@ -90,21 +99,11 @@ has _production_map => (
     builder  => '_build_production_map',
 );
 
-# XXX - share and inject
-has _memory_stats => (
+has has_been_processed => (
     is      => 'ro',
-    isa     => Maybe ['Memory::Stats'],
-    default => sub {
-        return try {
-            require Memory::Stats;
-            my $s = Memory::Stats->new;
-            $s->start;
-            $s;
-        }
-        catch {
-            undef;
-        }
-    },
+    isa     => Bool,
+    default => 0,
+    writer  => 'set_has_been_processed',
 );
 
 sub traverse {
@@ -180,70 +179,12 @@ sub _build_children_steps {
     return [ sort_by { $_->step } @children ];
 }
 
-sub is_up_to_date {
-    my $self   = shift;
-    my $logger = shift;
-
-    my $class = $self->step;
-
-    unless ( defined $self->last_run_time ) {
-        $logger->debug("No last run time for $class.")
-            if $logger;
-        return 0;
-    }
-
-    unless ( @{ $self->_children_steps } ) {
-        $logger->debug("No previous steps for $class.")
-            if $logger;
-        return 1;
-    }
-
-    # unless ( all { $_->is_up_to_date } @{ $self->_children_steps } ) {
-    #     $self->logger->debug("A previous step for $class is not up to date.")
-    #         if $logger;
-    #     return 0;
-    # }
-
-    my @children_last_run_times
-        = map { $_->last_run_time } @{ $self->_children_steps };
-
-    unless ( all { defined } @children_last_run_times ) {
-        $logger->debug(
-            "A previous step for $class does not have a last run time.")
-            if $logger;
-        return 0;
-    }
-
-    my $max_previous_step_last_run_time = max(@children_last_run_times);
-    $logger->info( "Last run time for $class is "
-            . $self->last_run_time
-            . ". Previous steps last run time is $max_previous_step_last_run_time."
-    ) if $logger;
-    my $step_is_up_to_date
-        = $self->last_run_time > $max_previous_step_last_run_time;
-
-    $logger->info( "$class is "
-            . ( $step_is_up_to_date ? q{} : 'not ' )
-            . 'up to date.' )
-        if $logger;
-
-    return $step_is_up_to_date;
-}
-
 sub _build_step_object {
     my $self = shift;
     my $args = $self->_constructor_args_for_class;
 
-    my $class = $self->step;
-
-    $self->_log_memory_usage("Before constructing $class");
-
-    $self->logger->debug("$class->new");
-    my $object = $class->new($args);
-
-    $self->_log_memory_usage("After constructing $class");
-
-    return $object;
+    $self->logger->debug( $self->step . '->new' );
+    return $self->step->new($args);
 }
 
 sub _constructor_args_for_class {
@@ -282,12 +223,75 @@ sub _constructor_args_for_class {
     return \%args;
 }
 
-sub run_step {
-    my $self = shift;
+sub maybe_run_step {
+    my $self                 = shift;
+    my $force_step_execution = shift;
+
+    die 'Tried running '
+        . $self->step
+        . ' when not all children have been processed.'
+        unless $self->children_have_been_processed;
+
+    if ( $self->has_been_processed ) {
+        $self->logger->info( $self->step . ' already ran. Skipping.' );
+        return;
+    }
+
+    if (  !$force_step_execution
+        && $self->_is_up_to_date ) {
+        $self->logger->info( 'Skipping ' . $self->step );
+        $self->set_has_been_processed(1);
+        return;
+    }
+
+    $self->logger->info( 'Running ' . $self->step );
 
     $self->_step_object->run;
+
+    $self->set_has_been_processed(1);
     $self->_clear_last_run_time;
     $self->_clear_step_productions_as_hashref;
+
+    return;
+}
+
+sub _is_up_to_date {
+    my $self = shift;
+
+    my $class = $self->step;
+
+    unless ( defined $self->last_run_time ) {
+        $self->logger->debug("No last run time for $class.");
+        return 0;
+    }
+
+    unless ( @{ $self->_children_steps } ) {
+        $self->logger->debug("No previous steps for $class.");
+        return 1;
+    }
+
+    my @children_last_run_times
+        = map { $_->last_run_time } @{ $self->_children_steps };
+
+    unless ( all { defined } @children_last_run_times ) {
+        $self->logger->debug(
+            "A previous step for $class does not have a last run time.");
+        return 0;
+    }
+
+    my $max_previous_step_last_run_time = max(@children_last_run_times);
+    $self->logger->info( "Last run time for $class is "
+            . $self->last_run_time
+            . ". Previous steps last run time is $max_previous_step_last_run_time."
+    );
+    my $step_is_up_to_date
+        = $self->last_run_time > $max_previous_step_last_run_time;
+
+    $self->logger->info( "$class is "
+            . ( $step_is_up_to_date ? q{} : 'not ' )
+            . 'up to date.' );
+
+    return $step_is_up_to_date;
 }
 
 sub productions {
@@ -307,33 +311,12 @@ sub _children_productions {
         @{ $self->_children_steps };
 }
 
-sub _log_memory_usage {
-    my $self       = shift;
-    my $checkpoint = shift;
+sub children_have_been_processed {
+    my $self = shift;
 
-    return unless $self->_memory_stats;
-
-    $self->_memory_stats->checkpoint($checkpoint);
-
-    # There's no way to get the total use so far without calling stop(), which
-    # is quite annoying. See
-    # https://github.com/celogeek/perl-memory-stats/issues/3.
-
-    ## no critic (Subroutines::ProtectPrivateSubs)
-    $self->logger->info(
-        sprintf(
-            'Total memory use since Stepford started is %d',
-            $self->_memory_stats->_memory_usage->[-1][1]
-                - $self->_memory_stats->_memory_usage->[0][1]
-        )
-    );
-    $self->logger->info(
-        sprintf(
-            'Memory since last checked is %d',
-            $self->_memory_stats->delta_usage
-        )
-    );
+    all { $_->has_been_processed } @{ $self->_children_steps };
 }
+
 __PACKAGE__->meta->make_immutable;
 
 1;

@@ -47,6 +47,22 @@ has jobs => (
     default => 1,
 );
 
+has _memory_stats => (
+    is      => 'ro',
+    isa     => Maybe ['Memory::Stats'],
+    default => sub {
+        return try {
+            require Memory::Stats;
+            my $s = Memory::Stats->new;
+            $s->start;
+            $s;
+        }
+        catch {
+            undef;
+        }
+    },
+);
+
 has _step_classes => (
     is       => 'ro',
     isa      => ArrayOfSteps,
@@ -100,19 +116,14 @@ sub _run_sequential {
     my $plan                 = shift;
     my $force_step_execution = shift;
 
-    ## XXX - handle force-execution
-
-    my %ran;
-
-    # XXX - temp
     $plan->step_tree->traverse(
         sub {
             my $step_tree = shift;
 
-            return if $ran{ $step_tree->step };
-
-            $self->_run_step_in_process( $step_tree, $force_step_execution );
-            $ran{ $step_tree->step } = 1;
+            $self->_maybe_run_step_in_process(
+                $step_tree,
+                $force_step_execution
+            );
             return;
         }
     );
@@ -125,9 +136,8 @@ sub _run_parallel {
 
     my $pm = Parallel::ForkManager->new( $self->jobs );
 
-    # XXX - these are currently by child PIDs, but there is not reason why
-    # we could not use an ID that is less likely to result in a collision.
     my %trees;
+    my $steps_finished_since_last_iteration = 0;
 
     $pm->run_on_finish(
         sub {
@@ -160,83 +170,88 @@ sub _run_parallel {
                 $step_tree->set_last_run_time( $message->{last_run_time} );
                 $step_tree->set_step_productions_as_hashref(
                     $message->{productions} );
+                $step_tree->set_has_been_processed(1);
+                $steps_finished_since_last_iteration++;
             }
         }
     );
 
-    my %ran;
+    while ( !$plan->step_tree->has_been_processed ) {
+        $plan->step_tree->traverse(
+            sub {
+                my $step_tree = shift;
 
-    $plan->step_tree->traverse(
-        sub {
-            my $step_tree = shift;
+                return unless $step_tree->children_have_been_processed;
 
-            my $class = $step_tree->step;
-            return if $ran{$class};
+                return if $step_tree->has_been_processed;
 
-            if ( $class->does('Stepford::Role::Step::Unserializable') ) {
-                $self->_run_step_in_process(
-                    $step_tree,
-                    $force_step_execution
-                );
-                $ran{ $step_tree->step } = 1;
-                return;
+                my $class = $step_tree->step;
+
+                if ( $class->does('Stepford::Role::Step::Unserializable') ) {
+                    $self->_maybe_run_step_in_process(
+                        $step_tree,
+                        $force_step_execution
+                    );
+                    $steps_finished_since_last_iteration++;
+                    return;
+                }
+
+                if ( my $pid = $pm->start($class) ) {
+                    $trees{$pid} = $step_tree;
+
+                    $self->logger->debug(
+                        "Forked child to run $class - pid $pid");
+                    return;
+                }
+
+                # child
+                my $error;
+                try {
+                    $self->_maybe_run_step_in_process(
+                        $step_tree,
+                        $force_step_execution
+                    );
+                }
+                catch {
+                    $error = $_;
+                };
+
+                my %message
+                    = defined $error
+                    ? ( error => $error . q{} )
+                    : (
+                    last_run_time => scalar $step_tree->last_run_time,
+                    productions   => $step_tree->step_productions_as_hashref,
+                    );
+
+                $pm->finish( 0, \%message );
             }
+        );
 
-            if ( my $pid = $pm->start($class) ) {
+        $pm->reap_finished_children;
 
-                # parent
-                die "PID $pid reused for $class and $trees{$pid}"
-                    if exists $trees{pid};
+        # If none of the child processes have finished, there is no point in
+        # wasting a bunch of CPU checking for steps that can be worked on. We
+        # wait until at least one step has finished.
+        $pm->wait_one_child unless $steps_finished_since_last_iteration;
 
-                $trees{$pid} = $step_tree;
-                $ran{ $step_tree->step } = 1;
-
-                $self->logger->debug("Forked child to run $class - pid $pid");
-                return;
-            }
-
-            # child
-            my $error;
-            try {
-                $self->_run_step_in_process(
-                    $step_tree,
-                    $force_step_execution
-                );
-            }
-            catch {
-                $error = $_;
-            };
-
-            my %message
-                = defined $error
-                ? ( error => $error . q{} )
-                : (
-                last_run_time => scalar $step_tree->last_run_time,
-                productions   => $step_tree->step_productions_as_hashref,
-                );
-
-            $pm->finish( 0, \%message );
-        }
-    );
+        $steps_finished_since_last_iteration = 0;
+    }
 
     $self->logger->debug('Waiting for children');
     $pm->wait_all_children;
 }
 
-sub _run_step_in_process {
+sub _maybe_run_step_in_process {
     my $self                 = shift;
     my $step_tree            = shift;
     my $force_step_execution = shift;
 
-    if (  !$force_step_execution
-        && $step_tree->is_up_to_date( $self->logger ) ) {
-        $self->logger->info( 'Skipping ' . $step_tree->step );
-        return;
-    }
+    $self->_log_memory_usage( 'Before running ' . $step_tree->step );
 
-    $self->logger->info( 'Running ' . $step_tree->step );
+    $step_tree->maybe_run_step($force_step_execution);
 
-    $step_tree->run_step;
+    $self->_log_memory_usage( 'After running ' . $step_tree->step );
 
     return;
 }
@@ -308,6 +323,34 @@ sub _build_logger {
     require Log::Dispatch::Null;
     return Log::Dispatch->new(
         outputs => [ [ Null => min_level => 'emerg' ] ] );
+}
+
+sub _log_memory_usage {
+    my $self       = shift;
+    my $checkpoint = shift;
+
+    return unless $self->_memory_stats;
+
+    $self->_memory_stats->checkpoint($checkpoint);
+
+    # There's no way to get the total use so far without calling stop(), which
+    # is quite annoying. See
+    # https://github.com/celogeek/perl-memory-stats/issues/3.
+
+    ## no critic (Subroutines::ProtectPrivateSubs)
+    $self->logger->info(
+        sprintf(
+            'Total memory use since Stepford started is %d',
+            $self->_memory_stats->_memory_usage->[-1][1]
+                - $self->_memory_stats->_memory_usage->[0][1]
+        )
+    );
+    $self->logger->info(
+        sprintf(
+            'Memory since last checked is %d',
+            $self->_memory_stats->delta_usage
+        )
+    );
 }
 
 __PACKAGE__->meta->make_immutable;
