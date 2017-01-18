@@ -127,8 +127,7 @@ EOF
     ok(
         (
             grep {
-                $_->{message}
-                    =~ /^\QLast run time for Test1::Step::CombineFiles is \E.+\QPrevious steps last run time is/
+                $_->{message} =~ /^\QTest1::Step::CombineFiles is up to date./
             } @messages
         ),
         'logged a message when skipping a step'

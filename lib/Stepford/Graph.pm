@@ -196,28 +196,31 @@ sub _is_up_to_date {
         return 1;
     }
 
-    my @children_last_run_times
-        = map { $_->last_run_time } @{ $self->_children_graphs };
-
-    unless ( all { defined } @children_last_run_times ) {
+    if ( my @missing
+        = grep { !defined $_->last_run_time } @{ $self->_children_graphs } ) {
         $self->logger->debug(
-            "A previous step for $class does not have a last run time.");
+            "A previous step for $class does not have a last run time: "
+                . join ', ', map { $_->step } @missing );
         return 0;
     }
 
-    my $max_previous_step_last_run_time = max(@children_last_run_times);
-    $self->logger->info( "Last run time for $class is "
+    my $step_last_run_time = $self->last_run_time;
+    my @newer_children = grep { $_->last_run_time > $step_last_run_time }
+        @{ $self->_children_graphs };
+    unless (@newer_children) {
+        $self->logger->info("$class is up to date.");
+        return 1;
+    }
+
+    $self->logger->info(
+              "Last run time for $class is "
             . $self->last_run_time
-            . ". Previous steps last run time is $max_previous_step_last_run_time."
+            . '. The following children have newer last run times: '
+            . join ', ',
+        map { $_->step . ' (' . $_->last_run_time . ')' } @newer_children
     );
-    my $step_is_up_to_date
-        = $self->last_run_time > $max_previous_step_last_run_time;
 
-    $self->logger->info( "$class is "
-            . ( $step_is_up_to_date ? q{} : 'not ' )
-            . 'up to date.' );
-
-    return $step_is_up_to_date;
+    return 0;
 }
 
 sub productions {
