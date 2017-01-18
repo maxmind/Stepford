@@ -116,12 +116,12 @@ sub _run_sequential {
     my $plan                 = shift;
     my $force_step_execution = shift;
 
-    $plan->step_tree->traverse(
+    $plan->step_graph->traverse(
         sub {
-            my $step_tree = shift;
+            my $step_graph = shift;
 
             $self->_maybe_run_step_in_process(
-                $step_tree,
+                $step_graph,
                 $force_step_execution
             );
             return;
@@ -136,7 +136,7 @@ sub _run_parallel {
 
     my $pm = Parallel::ForkManager->new( $self->jobs );
 
-    my %trees;
+    my %graphs;
     my $steps_finished_since_last_iteration = 0;
 
     $pm->run_on_finish(
@@ -163,33 +163,33 @@ sub _run_parallel {
                     . " with error:\n$message->{error}";
             }
             else {
-                my $step_tree = $trees{$pid};
-                die "Could not find step tree for $pid"
-                    unless defined $step_tree;
+                my $step_graph = $graphs{$pid};
+                die "Could not find step graph for $pid"
+                    unless defined $step_graph;
 
-                $step_tree->set_last_run_time( $message->{last_run_time} );
-                $step_tree->set_step_productions_as_hashref(
+                $step_graph->set_last_run_time( $message->{last_run_time} );
+                $step_graph->set_step_productions_as_hashref(
                     $message->{productions} );
-                $step_tree->set_has_been_processed(1);
+                $step_graph->set_has_been_processed(1);
                 $steps_finished_since_last_iteration++;
             }
         }
     );
 
-    while ( !$plan->step_tree->has_been_processed ) {
-        $plan->step_tree->traverse(
+    while ( !$plan->step_graph->has_been_processed ) {
+        $plan->step_graph->traverse(
             sub {
-                my $step_tree = shift;
+                my $step_graph = shift;
 
-                return unless $step_tree->children_have_been_processed;
+                return unless $step_graph->children_have_been_processed;
 
-                return if $step_tree->has_been_processed;
+                return if $step_graph->has_been_processed;
 
-                my $class = $step_tree->step;
+                my $class = $step_graph->step;
 
-                unless ( $step_tree->is_serializable ) {
+                unless ( $step_graph->is_serializable ) {
                     $self->_maybe_run_step_in_process(
-                        $step_tree,
+                        $step_graph,
                         $force_step_execution
                     );
                     $steps_finished_since_last_iteration++;
@@ -197,7 +197,7 @@ sub _run_parallel {
                 }
 
                 if ( my $pid = $pm->start($class) ) {
-                    $trees{$pid} = $step_tree;
+                    $graphs{$pid} = $step_graph;
 
                     $self->logger->debug(
                         "Forked child to run $class - pid $pid");
@@ -208,7 +208,7 @@ sub _run_parallel {
                 my $error;
                 try {
                     $self->_maybe_run_step_in_process(
-                        $step_tree,
+                        $step_graph,
                         $force_step_execution
                     );
                 }
@@ -220,8 +220,8 @@ sub _run_parallel {
                     = defined $error
                     ? ( error => $error . q{} )
                     : (
-                    last_run_time => scalar $step_tree->last_run_time,
-                    productions   => $step_tree->step_productions_as_hashref,
+                    last_run_time => scalar $step_graph->last_run_time,
+                    productions   => $step_graph->step_productions_as_hashref,
                     );
 
                 $pm->finish( 0, \%message );
@@ -244,14 +244,14 @@ sub _run_parallel {
 
 sub _maybe_run_step_in_process {
     my $self                 = shift;
-    my $step_tree            = shift;
+    my $step_graph            = shift;
     my $force_step_execution = shift;
 
-    $self->_log_memory_usage( 'Before running ' . $step_tree->step );
+    $self->_log_memory_usage( 'Before running ' . $step_graph->step );
 
-    $step_tree->maybe_run_step($force_step_execution);
+    $step_graph->maybe_run_step($force_step_execution);
 
-    $self->_log_memory_usage( 'After running ' . $step_tree->step );
+    $self->_log_memory_usage( 'After running ' . $step_graph->step );
 
     return;
 }

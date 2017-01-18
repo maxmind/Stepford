@@ -9,7 +9,7 @@ our $VERSION = '0.003010';
 use List::AllUtils qw( all uniq );
 use Stepford::Error;
 use Stepford::FinalStep;
-use Stepford::Runner::StepTree ();
+use Stepford::Runner::StepGraph ();
 use Stepford::Types qw( ArrayRef ArrayOfSteps ClassName HashRef Logger Step );
 
 use Moose;
@@ -35,11 +35,11 @@ has _final_steps => (
     required => 1,
 );
 
-has step_tree => (
+has step_graph => (
     is      => 'ro',
-    isa     => 'Stepford::Runner::StepTree',
+    isa     => 'Stepford::Runner::StepGraph',
     lazy    => 1,
-    builder => '_build_step_tree',
+    builder => '_build_step_graph',
 );
 
 has logger => (
@@ -48,10 +48,10 @@ has logger => (
     required => 1,
 );
 
-sub _build_step_tree {
+sub _build_step_graph {
     my $self = shift;
 
-    my $final_step = Stepford::Runner::StepTree->new(
+    my $final_step = Stepford::Runner::StepGraph->new(
         config         => $self->config,
         logger         => $self->logger,
         step           => 'Stepford::FinalStep',
@@ -62,7 +62,7 @@ sub _build_step_tree {
     # this is necessary due to the parent param nonsense
     for my $step ( @{ $self->_final_steps } ) {
         $final_step->add_child(
-            Stepford::Runner::StepTree->new(
+            Stepford::Runner::StepGraph->new(
                 config       => $self->config,
                 logger       => $self->logger,
                 step         => $step,

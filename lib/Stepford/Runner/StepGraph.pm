@@ -1,4 +1,4 @@
-package Stepford::Runner::StepTree;
+package Stepford::Runner::StepGraph;
 
 use strict;
 use warnings;
@@ -78,14 +78,14 @@ has _children_steps => (
     traits   => ['Array'],
     init_arg => 'children_steps',
     is       => 'ro',
-    isa      => ArrayRef ['Stepford::Runner::StepTree'],
+    isa      => ArrayRef ['Stepford::Runner::StepGraph'],
 
     # required => 1,
     lazy    => 1,
     builder => '_build_children_steps',
     handles => {
 
-        # XXX - the code should be refactored so modifying the tree is not
+        # XXX - the code should be refactored so modifying the graph is not
         # necessary
         add_child => 'push',
     },
@@ -168,7 +168,7 @@ sub _build_children_steps {
         next if exists $deps{$child_step};
         $deps{$child_step} = 1;
 
-        push @children, Stepford::Runner::StepTree->new(
+        push @children, Stepford::Runner::StepGraph->new(
             config       => $self->config,
             logger       => $self->logger,
             step         => $child_step,
@@ -209,7 +209,7 @@ sub _constructor_args_for_class {
 
         # XXX - I'm not sure this error is reachable. We already check that a
         # class's declared dependencies can be satisfied while building the
-        # tree. That said, it doesn't hurt to leave this check in here, and it
+        # graph. That said, it doesn't hurt to leave this check in here, and it
         # might help illuminate bugs in the Runner itself.
         Stepford::Error->throw(
             "Cannot construct a $class object. We are missing a required production: $dep"
