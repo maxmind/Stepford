@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+- The internals of Stepford were largely rewritten. The planner contained
+  significant bugs that caused Stepford to run or skip steps incorrectly,
+  particularly on complex trees.
+- Stepford::Planner, a deprecated class, was removed. Use Stepford::Runner
+  instead.
+
 0.003009 2016-09-29
 
 - Make Memory::Stats optional (since not all platforms can reliably install
