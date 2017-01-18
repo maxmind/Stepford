@@ -4,7 +4,7 @@ Stepford - A vaguely Rake/Make/Cake-like thing for Perl - create steps and let a
 
 # VERSION
 
-version 0.003010
+version 0.004000
 
 # SYNOPSIS
 

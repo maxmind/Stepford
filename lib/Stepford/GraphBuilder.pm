@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.003010';
+our $VERSION = '0.004000';
 
 use List::AllUtils qw( all sort_by uniq );
 use Stepford::Error;
