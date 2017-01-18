@@ -70,7 +70,7 @@ has _graph_cache => (
 sub _build_graph {
     my $self = shift;
 
-    return Stepford::Graph->new(
+    my $graph = Stepford::Graph->new(
         config          => $self->config,
         logger          => $self->logger,
         step            => 'Stepford::FinalStep',
@@ -79,6 +79,12 @@ sub _build_graph {
             map { $self->_create_graph( $_, {} ) } @{ $self->_final_steps }
         ],
     );
+
+    $self->logger->debug( 'Graph for '
+            . ( join q{ - }, @{ $self->_final_steps } ) . ":\n"
+            . $graph->as_string );
+
+    return $graph;
 }
 
 sub _build_production_map {

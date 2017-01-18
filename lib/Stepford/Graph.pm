@@ -240,6 +240,16 @@ sub is_serializable {
     ( $self, @{ $self->_children_graphs } );
 }
 
+sub as_string {
+    my $self = shift;
+    my $depth = shift || 0;
+
+    return ( q{ } x ( 4 * $depth ) ) . $self->step . "\n" . join(
+        q{},
+        map { $_->as_string( $depth + 1 ) } @{ $self->_children_graphs }
+    );
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
