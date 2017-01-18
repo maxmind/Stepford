@@ -187,7 +187,7 @@ sub _run_parallel {
 
                 my $class = $step_tree->step;
 
-                if ( $class->does('Stepford::Role::Step::Unserializable') ) {
+                unless ( $step_tree->is_serializable ) {
                     $self->_maybe_run_step_in_process(
                         $step_tree,
                         $force_step_execution

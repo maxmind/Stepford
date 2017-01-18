@@ -6,7 +6,7 @@ use namespace::autoclean;
 
 our $VERSION = '0.003010';
 
-use List::AllUtils qw( all any first_index max sort_by );
+use List::AllUtils qw( all any first_index max none sort_by );
 use Scalar::Util qw( refaddr );
 use Stepford::Error;
 use Stepford::Types qw(
@@ -315,6 +315,17 @@ sub children_have_been_processed {
     my $self = shift;
 
     all { $_->has_been_processed } @{ $self->_children_steps };
+}
+
+sub is_serializable {
+    my $self = shift;
+
+    # A step can be serialized as long as it and all of its children do not
+    # implement Stepford::Role::Step::Unserializable
+    none {
+        $_->step->does('Stepford::Role::Step::Unserializable')
+    }
+    ( $self, @{ $self->_children_steps } );
 }
 
 __PACKAGE__->meta->make_immutable;
