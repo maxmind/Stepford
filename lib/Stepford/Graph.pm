@@ -74,6 +74,13 @@ has _children_graphs => (
     required => 1,
 );
 
+has is_being_processed => (
+    is      => 'ro',
+    isa     => Bool,
+    default => 0,
+    writer  => 'set_is_being_processed',
+);
+
 has has_been_processed => (
     is      => 'ro',
     isa     => Bool,
@@ -108,6 +115,7 @@ sub _constructor_args_for_class {
     my %productions = $self->_children_productions;
 
     for my $dep ( map { $_->name } $class->dependencies ) {
+        next if exists $args{$dep};
 
         # XXX - I'm not sure this error is reachable. We already check that a
         # class's declared dependencies can be satisfied while building the
@@ -144,6 +152,9 @@ sub maybe_run_step {
         . ' when not all children have been processed.'
         unless $self->children_have_been_processed;
 
+    die 'Tried running ' . $self->step . ' when it is currently being run'
+        if $self->is_being_processed;
+
     if ( $self->has_been_processed ) {
         $self->logger->info( $self->step . ' already ran. Skipping.' );
         return;
@@ -156,10 +167,13 @@ sub maybe_run_step {
         return;
     }
 
+    $self->set_is_being_processed(1);
+
     $self->logger->info( 'Running ' . $self->step );
 
     $self->_step_object->run;
 
+    $self->set_is_being_processed(0);
     $self->set_has_been_processed(1);
     $self->_clear_last_run_time;
     $self->_clear_step_productions_as_hashref;

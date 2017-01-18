@@ -171,6 +171,7 @@ sub _run_parallel {
                 $graph->set_last_run_time( $message->{last_run_time} );
                 $graph->set_step_productions_as_hashref(
                     $message->{productions} );
+                $graph->set_is_being_processed(0);
                 $graph->set_has_been_processed(1);
                 $steps_finished_since_last_iteration++;
             }
@@ -181,6 +182,8 @@ sub _run_parallel {
         $root_graph->traverse(
             sub {
                 my $graph = shift;
+
+                return if $graph->is_being_processed;
 
                 return unless $graph->children_have_been_processed;
 
@@ -198,6 +201,8 @@ sub _run_parallel {
                 }
 
                 if ( my $pid = $pm->start($class) ) {
+                    $graph->set_is_being_processed(1);
+
                     $graphs{$pid} = $graph;
 
                     $self->logger->debug(

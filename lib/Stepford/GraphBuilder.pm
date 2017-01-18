@@ -150,6 +150,9 @@ sub _step_for_dependency {
     my $parent_step = shift;
     my $dep         = shift;
 
+    # if a dependency exists in the config, we don't need to build it.
+    return if exists $self->config->{$dep};
+
     my $map = $self->_production_map;
 
     Stepford::Error->throw( "Cannot resolve a dependency for $parent_step."
