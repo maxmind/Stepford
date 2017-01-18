@@ -1,4 +1,4 @@
-package Stepford::Plan;
+package Stepford::GraphBuilder;
 
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ our $VERSION = '0.003010';
 use List::AllUtils qw( all sort_by uniq );
 use Stepford::Error;
 use Stepford::FinalStep;
-use Stepford::Runner::StepGraph ();
+use Stepford::Graph ();
 use Stepford::Types qw( ArrayRef ArrayOfSteps ClassName HashRef Logger Step );
 
 use Moose;
@@ -35,11 +35,11 @@ has _final_steps => (
     required => 1,
 );
 
-has step_graph => (
+has graph => (
     is      => 'ro',
-    isa     => 'Stepford::Runner::StepGraph',
+    isa     => 'Stepford::Graph',
     lazy    => 1,
-    builder => '_build_step_graph',
+    builder => '_build_graph',
 );
 
 has _production_map => (
@@ -56,28 +56,27 @@ has logger => (
     required => 1,
 );
 
-has _step_graph_cache => (
+has _graph_cache => (
     traits  => ['Hash'],
     is      => 'ro',
     isa     => HashRef,
     default => sub { {} },
     handles => {
-        _cache_step_graph      => 'set',
-        _get_cached_step_graph => 'get',
+        _cache_graph      => 'set',
+        _get_cached_graph => 'get',
     },
 );
 
-sub _build_step_graph {
+sub _build_graph {
     my $self = shift;
 
-    return Stepford::Runner::StepGraph->new(
-        config               => $self->config,
-        logger               => $self->logger,
-        step                 => 'Stepford::FinalStep',
-        children_step_graphs => [
+    return Stepford::Graph->new(
+        config          => $self->config,
+        logger          => $self->logger,
+        step            => 'Stepford::FinalStep',
+        children_graphs => [
             sort_by { $_->step }
-            map { $self->_create_step_graph( $_, {} ) }
-                @{ $self->_final_steps }
+            map { $self->_create_graph( $_, {} ) } @{ $self->_final_steps }
         ],
     );
 }
@@ -97,7 +96,7 @@ sub _build_production_map {
     return \%map;
 }
 
-sub _create_step_graph {
+sub _create_graph {
     my $self    = shift;
     my $step    = shift;
     my $parents = shift;
@@ -110,24 +109,24 @@ sub _create_step_graph {
         $step => 1,
     };
 
-    if ( my $step_graph = $self->_get_cached_step_graph($step) ) {
-        return $step_graph;
+    if ( my $graph = $self->_get_cached_graph($step) ) {
+        return $graph;
     }
 
-    my $step_graph = Stepford::Runner::StepGraph->new(
+    my $graph = Stepford::Graph->new(
         config => $self->config,
         logger => $self->logger,
         step   => $step,
-        children_step_graphs =>
-            $self->_create_children_step_graphs( $step, $childrens_parents ),
+        children_graphs =>
+            $self->_create_children_graphs( $step, $childrens_parents ),
     );
 
-    $self->_cache_step_graph( $step => $step_graph );
+    $self->_cache_graph( $step => $graph );
 
-    return $step_graph;
+    return $graph;
 }
 
-sub _create_children_step_graphs {
+sub _create_children_graphs {
     my $self              = shift;
     my $step              = shift;
     my $childrens_parents = shift;
@@ -136,7 +135,7 @@ sub _create_children_step_graphs {
         = uniq sort map { $self->_step_for_dependency( $step, $_->name ) }
         $step->dependencies;
 
-    return [ map { $self->_create_step_graph( $_, $childrens_parents ) }
+    return [ map { $self->_create_graph( $_, $childrens_parents ) }
             @children_steps ];
 }
 

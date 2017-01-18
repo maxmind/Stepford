@@ -12,7 +12,7 @@ use MooseX::Params::Validate qw( validated_list );
 use Parallel::ForkManager;
 use Scalar::Util qw( blessed );
 use Stepford::Error;
-use Stepford::Plan;
+use Stepford::GraphBuilder;
 use Stepford::Types qw(
     ArrayOfClassPrefixes ArrayOfSteps Bool ClassName
     HashRef Logger Maybe PositiveInt Step
@@ -99,13 +99,14 @@ sub run {
         }
     );
 
-    my $plan = $self->_make_plan( $final_steps, $config );
+    my $root_graph
+        = $self->_make_root_graph_builder( $final_steps, $config )->graph;
 
     if ( $self->jobs > 1 ) {
-        $self->_run_parallel( $plan, $force_step_execution );
+        $self->_run_parallel( $root_graph, $force_step_execution );
     }
     else {
-        $self->_run_sequential( $plan, $force_step_execution );
+        $self->_run_sequential( $root_graph, $force_step_execution );
     }
 
     return;
@@ -113,15 +114,15 @@ sub run {
 
 sub _run_sequential {
     my $self                 = shift;
-    my $plan                 = shift;
+    my $root_graph           = shift;
     my $force_step_execution = shift;
 
-    $plan->step_graph->traverse(
+    $root_graph->traverse(
         sub {
-            my $step_graph = shift;
+            my $graph = shift;
 
             $self->_maybe_run_step_in_process(
-                $step_graph,
+                $graph,
                 $force_step_execution
             );
             return;
@@ -131,7 +132,7 @@ sub _run_sequential {
 
 sub _run_parallel {
     my $self                 = shift;
-    my $plan                 = shift;
+    my $root_graph           = shift;
     my $force_step_execution = shift;
 
     my $pm = Parallel::ForkManager->new( $self->jobs );
@@ -163,33 +164,33 @@ sub _run_parallel {
                     . " with error:\n$message->{error}";
             }
             else {
-                my $step_graph = $graphs{$pid};
+                my $graph = $graphs{$pid};
                 die "Could not find step graph for $pid"
-                    unless defined $step_graph;
+                    unless defined $graph;
 
-                $step_graph->set_last_run_time( $message->{last_run_time} );
-                $step_graph->set_step_productions_as_hashref(
+                $graph->set_last_run_time( $message->{last_run_time} );
+                $graph->set_step_productions_as_hashref(
                     $message->{productions} );
-                $step_graph->set_has_been_processed(1);
+                $graph->set_has_been_processed(1);
                 $steps_finished_since_last_iteration++;
             }
         }
     );
 
-    while ( !$plan->step_graph->has_been_processed ) {
-        $plan->step_graph->traverse(
+    while ( !$root_graph->has_been_processed ) {
+        $root_graph->traverse(
             sub {
-                my $step_graph = shift;
+                my $graph = shift;
 
-                return unless $step_graph->children_have_been_processed;
+                return unless $graph->children_have_been_processed;
 
-                return if $step_graph->has_been_processed;
+                return if $graph->has_been_processed;
 
-                my $class = $step_graph->step;
+                my $class = $graph->step;
 
-                unless ( $step_graph->is_serializable ) {
+                unless ( $graph->is_serializable ) {
                     $self->_maybe_run_step_in_process(
-                        $step_graph,
+                        $graph,
                         $force_step_execution
                     );
                     $steps_finished_since_last_iteration++;
@@ -197,7 +198,7 @@ sub _run_parallel {
                 }
 
                 if ( my $pid = $pm->start($class) ) {
-                    $graphs{$pid} = $step_graph;
+                    $graphs{$pid} = $graph;
 
                     $self->logger->debug(
                         "Forked child to run $class - pid $pid");
@@ -208,7 +209,7 @@ sub _run_parallel {
                 my $error;
                 try {
                     $self->_maybe_run_step_in_process(
-                        $step_graph,
+                        $graph,
                         $force_step_execution
                     );
                 }
@@ -220,8 +221,8 @@ sub _run_parallel {
                     = defined $error
                     ? ( error => $error . q{} )
                     : (
-                    last_run_time => scalar $step_graph->last_run_time,
-                    productions   => $step_graph->step_productions_as_hashref,
+                    last_run_time => scalar $graph->last_run_time,
+                    productions   => $graph->step_productions_as_hashref,
                     );
 
                 $pm->finish( 0, \%message );
@@ -244,24 +245,24 @@ sub _run_parallel {
 
 sub _maybe_run_step_in_process {
     my $self                 = shift;
-    my $step_graph            = shift;
+    my $graph                = shift;
     my $force_step_execution = shift;
 
-    $self->_log_memory_usage( 'Before running ' . $step_graph->step );
+    $self->_log_memory_usage( 'Before running ' . $graph->step );
 
-    $step_graph->maybe_run_step($force_step_execution);
+    $graph->maybe_run_step($force_step_execution);
 
-    $self->_log_memory_usage( 'After running ' . $step_graph->step );
+    $self->_log_memory_usage( 'After running ' . $graph->step );
 
     return;
 }
 
-sub _make_plan {
+sub _make_root_graph_builder {
     my $self        = shift;
     my $final_steps = shift;
     my $config      = shift;
 
-    return Stepford::Plan->new(
+    return Stepford::GraphBuilder->new(
         config       => $config,
         step_classes => $self->_step_classes,
         final_steps  => $final_steps,

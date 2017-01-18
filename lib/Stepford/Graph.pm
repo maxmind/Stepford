@@ -1,4 +1,4 @@
-package Stepford::Runner::StepGraph;
+package Stepford::Graph;
 
 use strict;
 use warnings;
@@ -66,11 +66,11 @@ has step_productions_as_hashref => (
     default => sub { shift->_step_object->productions_as_hashref },
 );
 
-has _children_step_graphs => (
+has _children_graphs => (
     traits   => ['Array'],
-    init_arg => 'children_step_graphs',
+    init_arg => 'children_graphs',
     is       => 'ro',
-    isa      => ArrayRef ['Stepford::Runner::StepGraph'],
+    isa      => ArrayRef ['Stepford::Graph'],
     required => 1,
 );
 
@@ -130,7 +130,7 @@ sub traverse {
     my $self = shift;
     my $cb   = shift;
 
-    $_->traverse($cb) for @{ $self->_children_step_graphs };
+    $_->traverse($cb) for @{ $self->_children_graphs };
     $cb->($self);
     return;
 }
@@ -177,13 +177,13 @@ sub _is_up_to_date {
         return 0;
     }
 
-    unless ( @{ $self->_children_step_graphs } ) {
+    unless ( @{ $self->_children_graphs } ) {
         $self->logger->debug("No previous steps for $class.");
         return 1;
     }
 
     my @children_last_run_times
-        = map { $_->last_run_time } @{ $self->_children_step_graphs };
+        = map { $_->last_run_time } @{ $self->_children_graphs };
 
     unless ( all { defined } @children_last_run_times ) {
         $self->logger->debug(
@@ -220,13 +220,13 @@ sub _children_productions {
 
     return
         map { %{ $_->step_productions_as_hashref } }
-        @{ $self->_children_step_graphs };
+        @{ $self->_children_graphs };
 }
 
 sub children_have_been_processed {
     my $self = shift;
 
-    all { $_->has_been_processed } @{ $self->_children_step_graphs };
+    all { $_->has_been_processed } @{ $self->_children_graphs };
 }
 
 sub is_serializable {
@@ -237,7 +237,7 @@ sub is_serializable {
     none {
         $_->step->does('Stepford::Role::Step::Unserializable')
     }
-    ( $self, @{ $self->_children_step_graphs } );
+    ( $self, @{ $self->_children_graphs } );
 }
 
 __PACKAGE__->meta->make_immutable;

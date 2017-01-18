@@ -418,13 +418,13 @@ my $tempdir = tempdir( CLEANUP => 1 );
 }
 
 {
-    my $plan = Stepford::Runner->new(
+    my $builder = Stepford::Runner->new(
         step_namespaces => 'Test6::Step',
-    )->_make_plan( ['Test6::Step::A2'], {} );
+    )->_make_root_graph_builder( ['Test6::Step::A2'], {} );
 
     ## no critic (Subroutines::ProtectPrivateSubs)
     is(
-        $plan->_production_map->{thing_a},
+        $builder->_production_map->{thing_a},
         'Test6::Step::A1',
         'when two steps have the same production, choose the one that sorts first'
     );
