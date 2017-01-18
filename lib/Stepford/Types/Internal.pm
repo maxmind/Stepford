@@ -22,6 +22,8 @@ use MooseX::Types -declare => [
         )
 ];
 
+use namespace::clean;
+
 subtype PossibleClassName, as Str, inline_as {
     ## no critic (Subroutines::ProtectPrivateSubs)
     $_[0]->parent->_inline_check( $_[1] ) . ' && '

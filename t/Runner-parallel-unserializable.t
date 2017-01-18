@@ -32,6 +32,7 @@ my $file2 = $tempdir->file('file2');
     sub run {
         my $self = shift;
 
+        ## no critic (InputOutput::RequireBriefOpen)
         open my $fh, '<', $file1;
         $self->fh($fh);
 

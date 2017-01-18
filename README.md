@@ -4,7 +4,7 @@ Stepford - A vaguely Rake/Make/Cake-like thing for Perl - create steps and let a
 
 # VERSION
 
-version 0.003009
+version 0.003010
 
 # SYNOPSIS
 
@@ -171,6 +171,8 @@ major number, YYY is the minor number, and ZZZ is the patch number.
 Please report all issues with this code using the GitHub issue tracker at
 [https://github.com/maxmind/Stepford/issues](https://github.com/maxmind/Stepford/issues).
 
+Bugs may be submitted through [https://github.com/maxmind/Stepford/issues](https://github.com/maxmind/Stepford/issues).
+
 # AUTHOR
 
 Dave Rolsky <drolsky@maxmind.com>
@@ -184,7 +186,7 @@ Dave Rolsky <drolsky@maxmind.com>
 
 # COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2016 by MaxMind, Inc.
+This software is copyright (c) 2014 - 2017 by MaxMind, Inc.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
