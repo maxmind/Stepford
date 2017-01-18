@@ -3,6 +3,9 @@
 - The internals of Stepford were largely rewritten. The planner contained
   significant bugs that caused Stepford to run or skip steps incorrectly,
   particularly on complex trees.
+- If a dependency has an undef last_run_time, the step will always be re-run.
+  Previously, the step would be re-run only if all dependencies had an undef
+  last_run_time due to a bug.
 - Stepford::Planner, a deprecated class, was removed. Use Stepford::Runner
   instead.
 
