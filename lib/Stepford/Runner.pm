@@ -121,10 +121,15 @@ sub _run_sequential {
         sub {
             my $graph = shift;
 
-            $self->_maybe_run_step_in_process(
+            return
+                unless $self->_should_run_step(
                 $graph,
                 $force_step_execution
-            );
+                );
+
+            $self->logger->info( 'Running ' . $graph->step );
+
+            $self->_run_step_in_process($graph);
             return;
         }
     );
@@ -183,19 +188,16 @@ sub _run_parallel {
             sub {
                 my $graph = shift;
 
-                return if $graph->is_being_processed;
-
-                return unless $graph->children_have_been_processed;
-
-                return if $graph->has_been_processed;
-
                 my $class = $graph->step;
 
-                unless ( $graph->is_serializable ) {
-                    $self->_maybe_run_step_in_process(
-                        $graph,
-                        $force_step_execution
+                return
+                    unless $self->_should_run_step(
+                    $graph,
+                    $force_step_execution
                     );
+
+                unless ( $graph->is_serializable ) {
+                    $self->_run_step_in_process($graph);
                     $steps_finished_since_last_iteration++;
                     return;
                 }
@@ -213,10 +215,7 @@ sub _run_parallel {
                 # child
                 my $error;
                 try {
-                    $self->_maybe_run_step_in_process(
-                        $graph,
-                        $force_step_execution
-                    );
+                    $self->_run_step_in_process($graph);
                 }
                 catch {
                     $error = $_;
@@ -248,15 +247,28 @@ sub _run_parallel {
     $pm->wait_all_children;
 }
 
-sub _maybe_run_step_in_process {
+sub _should_run_step {
     my $self                 = shift;
     my $graph                = shift;
     my $force_step_execution = shift;
 
+    return 0 unless $graph->can_run_step;
+
+    if ( $graph->step_is_up_to_date($force_step_execution) ) {
+        $self->logger->info( 'Skipping ' . $graph->step );
+        $graph->set_has_been_processed(1);
+        return 0;
+    }
+
+    return 1;
+}
+
+sub _run_step_in_process {
+    my $self  = shift;
+    my $graph = shift;
+
     $self->_log_memory_usage( 'Before running ' . $graph->step );
-
-    $graph->maybe_run_step($force_step_execution);
-
+    $graph->run_step;
     $self->_log_memory_usage( 'After running ' . $graph->step );
 
     return;

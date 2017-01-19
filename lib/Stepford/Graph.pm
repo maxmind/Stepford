@@ -143,9 +143,84 @@ sub traverse {
     return;
 }
 
-sub maybe_run_step {
+# This checks is the step/graph is in a state where we can run it, e.g.,
+# it isn't being processed currently, the children have been processed, it
+# hasn't already been processed. It does not do any checks on the internal
+# state of the step (e.g., last run times). Rather, it is intended for
+# completely internal flow control.
+#
+# This is called repeatedly in a multi-process build to figure out whether we
+# are ready to consider running the step.
+sub can_run_step {
+    my $self = shift;
+
+    # These checks are not logged as they are part of Stepford's internal
+    # flow control and might be run many times for a single step.
+    return
+          !$self->is_being_processed
+        && $self->children_have_been_processed
+        && !$self->has_been_processed;
+}
+
+# This checks whether we should run the step. It is meant to be run after we
+# determine that the step is in a state where it _can_ run. This primarily
+# looks at the internal state of the step, e.g., last run times.
+#
+# This is generally only called once, immediately before we run the step or
+# decide never to run it.
+#
+# can and should are separated as they serve two different purposes in the
+# Runner's flow control.
+sub step_is_up_to_date {
     my $self                 = shift;
     my $force_step_execution = shift;
+
+    my $step = $self->step;
+
+    if ($force_step_execution) {
+        $self->logger->info("Force execution is enabled for $step.");
+        return 0;
+    }
+
+    unless ( defined $self->last_run_time ) {
+        $self->logger->debug("No last run time for $step.");
+        return 0;
+    }
+
+    unless ( @{ $self->_children_graphs } ) {
+        $self->logger->debug("No previous steps for $step.");
+        return 1;
+    }
+
+    if ( my @missing
+        = grep { !defined $_->last_run_time } @{ $self->_children_graphs } ) {
+        $self->logger->debug(
+            "A previous step for $step does not have a last run time: "
+                . join ', ', map { $_->step } @missing );
+        return 0;
+    }
+
+    my $step_last_run_time = $self->last_run_time;
+    my @newer_children = grep { $_->last_run_time > $step_last_run_time }
+        @{ $self->_children_graphs };
+    unless (@newer_children) {
+        $self->logger->info("$step is up to date.");
+        return 1;
+    }
+
+    $self->logger->info(
+              "Last run time for $step is "
+            . $self->last_run_time
+            . '. The following children have newer last run times: '
+            . join ', ',
+        map { $_->step . ' (' . $_->last_run_time . ')' } @newer_children
+    );
+
+    return 0;
+}
+
+sub run_step {
+    my $self = shift;
 
     die 'Tried running '
         . $self->step
@@ -154,18 +229,6 @@ sub maybe_run_step {
 
     die 'Tried running ' . $self->step . ' when it is currently being run'
         if $self->is_being_processed;
-
-    if ( $self->has_been_processed ) {
-        $self->logger->info( $self->step . ' already ran. Skipping.' );
-        return;
-    }
-
-    if (  !$force_step_execution
-        && $self->_is_up_to_date ) {
-        $self->logger->info( 'Skipping ' . $self->step );
-        $self->set_has_been_processed(1);
-        return;
-    }
 
     $self->set_is_being_processed(1);
 
@@ -179,48 +242,6 @@ sub maybe_run_step {
     $self->_clear_step_productions_as_hashref;
 
     return;
-}
-
-sub _is_up_to_date {
-    my $self = shift;
-
-    my $class = $self->step;
-
-    unless ( defined $self->last_run_time ) {
-        $self->logger->debug("No last run time for $class.");
-        return 0;
-    }
-
-    unless ( @{ $self->_children_graphs } ) {
-        $self->logger->debug("No previous steps for $class.");
-        return 1;
-    }
-
-    if ( my @missing
-        = grep { !defined $_->last_run_time } @{ $self->_children_graphs } ) {
-        $self->logger->debug(
-            "A previous step for $class does not have a last run time: "
-                . join ', ', map { $_->step } @missing );
-        return 0;
-    }
-
-    my $step_last_run_time = $self->last_run_time;
-    my @newer_children = grep { $_->last_run_time > $step_last_run_time }
-        @{ $self->_children_graphs };
-    unless (@newer_children) {
-        $self->logger->info("$class is up to date.");
-        return 1;
-    }
-
-    $self->logger->info(
-              "Last run time for $class is "
-            . $self->last_run_time
-            . '. The following children have newer last run times: '
-            . join ', ',
-        map { $_->step . ' (' . $_->last_run_time . ')' } @newer_children
-    );
-
-    return 0;
 }
 
 sub productions {
