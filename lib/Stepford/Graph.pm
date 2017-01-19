@@ -302,4 +302,11 @@ __END__
 
 =head1 DESCRIPTION
 
-This is an internal class and has no user-facing parts.
+This is an internal class and has no user-facing parts. Please do not use it.
+
+A C<Stepford::Graph> is a directed graph of the step dependency resolution.
+Each step node has connections to all of the nodes for the steps that create
+its dependencies. It is a graph rather than a tree as there may be multiple
+paths between a step node and steps that create dependencies of dependency
+steps. It is directed as each node only knows about the nodes for its own
+dependencies, not the nodes that it provides dependencies for.
