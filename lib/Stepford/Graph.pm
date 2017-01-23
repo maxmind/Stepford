@@ -35,7 +35,7 @@ has logger => (
     required => 1,
 );
 
-has step => (
+has step_class => (
     is       => 'ro',
     isa      => Step,
     required => 1,
@@ -92,14 +92,14 @@ sub _build_step_object {
     my $self = shift;
     my $args = $self->_constructor_args_for_class;
 
-    $self->logger->debug( $self->step . '->new' );
-    return $self->step->new($args);
+    $self->logger->debug( $self->step_class . '->new' );
+    return $self->step_class->new($args);
 }
 
 sub _constructor_args_for_class {
     my $self = shift;
 
-    my $class  = $self->step;
+    my $class  = $self->step_class;
     my $config = $self->config;
 
     my %args;
@@ -133,7 +133,8 @@ sub _constructor_args_for_class {
     return \%args;
 }
 
-# Note: this is intentionally depth-first traversal
+# Note: this is intentionally depth-first traversal as this is required for
+# the correct sort order when running steps.
 sub traverse {
     my $self = shift;
     my $cb   = shift;
@@ -143,7 +144,7 @@ sub traverse {
     return;
 }
 
-# This checks is the step/graph is in a state where we can run it, e.g.,
+# This checks if the step/graph is in a state where we can run it, e.g.,
 # it isn't being processed currently, the children have been processed, it
 # hasn't already been processed. It does not do any checks on the internal
 # state of the step (e.g., last run times). Rather, it is intended for
@@ -175,28 +176,28 @@ sub step_is_up_to_date {
     my $self                 = shift;
     my $force_step_execution = shift;
 
-    my $step = $self->step;
+    my $step_class = $self->step_class;
 
     if ($force_step_execution) {
-        $self->logger->info("Force execution is enabled for $step.");
+        $self->logger->info("Force execution is enabled for $step_class.");
         return 0;
     }
 
     unless ( defined $self->last_run_time ) {
-        $self->logger->debug("No last run time for $step.");
+        $self->logger->debug("No last run time for $step_class.");
         return 0;
     }
 
     unless ( @{ $self->_children_graphs } ) {
-        $self->logger->debug("No previous steps for $step.");
+        $self->logger->debug("No previous steps for $step_class.");
         return 1;
     }
 
     if ( my @missing
         = grep { !defined $_->last_run_time } @{ $self->_children_graphs } ) {
         $self->logger->debug(
-            "A previous step for $step does not have a last run time: "
-                . join ', ', map { $_->step } @missing );
+            "A previous step for $step_class does not have a last run time: "
+                . join ', ', map { $_->step_class } @missing );
         return 0;
     }
 
@@ -204,16 +205,17 @@ sub step_is_up_to_date {
     my @newer_children = grep { $_->last_run_time > $step_last_run_time }
         @{ $self->_children_graphs };
     unless (@newer_children) {
-        $self->logger->info("$step is up to date.");
+        $self->logger->info("$step_class is up to date.");
         return 1;
     }
 
     $self->logger->info(
-              "Last run time for $step is "
+              "Last run time for $step_class is "
             . $self->last_run_time
             . '. The following children have newer last run times: '
             . join ', ',
-        map { $_->step . ' (' . $_->last_run_time . ')' } @newer_children
+        map { $_->step_class . ' (' . $_->last_run_time . ')' }
+            @newer_children
     );
 
     return 0;
@@ -223,16 +225,18 @@ sub run_step {
     my $self = shift;
 
     die 'Tried running '
-        . $self->step
+        . $self->step_class
         . ' when not all children have been processed.'
         unless $self->children_have_been_processed;
 
-    die 'Tried running ' . $self->step . ' when it is currently being run'
+    die 'Tried running '
+        . $self->step_class
+        . ' when it is currently being run'
         if $self->is_being_processed;
 
     $self->set_is_being_processed(1);
 
-    $self->logger->info( 'Running ' . $self->step );
+    $self->logger->info( 'Running ' . $self->step_class );
 
     $self->_step_object->run;
 
@@ -273,7 +277,7 @@ sub is_serializable {
     # A step can be serialized as long as it and all of its children do not
     # implement Stepford::Role::Step::Unserializable
     none {
-        $_->step->does('Stepford::Role::Step::Unserializable')
+        $_->step_class->does('Stepford::Role::Step::Unserializable')
     }
     ( $self, @{ $self->_children_graphs } );
 }
@@ -282,7 +286,7 @@ sub as_string {
     my $self = shift;
     my $depth = shift || 0;
 
-    return ( q{ } x ( 4 * $depth ) ) . $self->step . "\n" . join(
+    return ( q{ } x ( 4 * $depth ) ) . $self->step_class . "\n" . join(
         q{},
         map { $_->as_string( $depth + 1 ) } @{ $self->_children_graphs }
     );

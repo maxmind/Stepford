@@ -73,9 +73,9 @@ sub _build_graph {
     my $graph = Stepford::Graph->new(
         config          => $self->config,
         logger          => $self->logger,
-        step            => 'Stepford::FinalStep',
+        step_class      => 'Stepford::FinalStep',
         children_graphs => [
-            sort_by { $_->step }
+            sort_by { $_->step_class }
             map { $self->_create_graph( $_, {} ) } @{ $self->_final_steps }
         ],
     );
@@ -103,43 +103,44 @@ sub _build_production_map {
 }
 
 sub _create_graph {
-    my $self    = shift;
-    my $step    = shift;
-    my $parents = shift;
+    my $self       = shift;
+    my $step_class = shift;
+    my $parents    = shift;
 
-    Stepford::Error->throw("The set of dependencies for $step is cyclical")
-        if exists $parents->{$step};
+    Stepford::Error->throw(
+        "The set of dependencies for $step_class is cyclical")
+        if exists $parents->{$step_class};
 
     my $childrens_parents = {
         %{$parents},
-        $step => 1,
+        $step_class => 1,
     };
 
-    if ( my $graph = $self->_get_cached_graph($step) ) {
+    if ( my $graph = $self->_get_cached_graph($step_class) ) {
         return $graph;
     }
 
     my $graph = Stepford::Graph->new(
-        config => $self->config,
-        logger => $self->logger,
-        step   => $step,
+        config     => $self->config,
+        logger     => $self->logger,
+        step_class => $step_class,
         children_graphs =>
-            $self->_create_children_graphs( $step, $childrens_parents ),
+            $self->_create_children_graphs( $step_class, $childrens_parents ),
     );
 
-    $self->_cache_graph( $step => $graph );
+    $self->_cache_graph( $step_class => $graph );
 
     return $graph;
 }
 
 sub _create_children_graphs {
     my $self              = shift;
-    my $step              = shift;
+    my $step_class        = shift;
     my $childrens_parents = shift;
 
-    my @children_steps
-        = uniq sort map { $self->_step_for_dependency( $step, $_->name ) }
-        $step->dependencies;
+    my @children_steps = uniq sort
+        map { $self->_step_for_dependency( $step_class, $_->name ) }
+        $step_class->dependencies;
 
     return [ map { $self->_create_graph( $_, $childrens_parents ) }
             @children_steps ];
