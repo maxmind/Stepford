@@ -1,6 +1,5 @@
 requires "Carp" => "0";
 requires "File::Temp" => "0";
-requires "Forest::Tree" => "0";
 requires "List::AllUtils" => "0";
 requires "Log::Dispatch" => "0";
 requires "Log::Dispatch::Null" => "0";
@@ -39,7 +38,6 @@ on 'test' => sub {
   requires "Test::Fatal" => "0";
   requires "Test::More" => "0.96";
   requires "Test::Requires" => "0";
-  requires "Test::Warnings" => "0";
   requires "autodie" => "0";
   requires "lib" => "0";
 };

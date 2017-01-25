@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.003010';
+our $VERSION = '0.004000';
 
 use List::AllUtils qw( first max );
 use Module::Pluggable::Object;
@@ -12,8 +12,7 @@ use MooseX::Params::Validate qw( validated_list );
 use Parallel::ForkManager;
 use Scalar::Util qw( blessed );
 use Stepford::Error;
-use Stepford::Plan;
-use Stepford::Runner::State;
+use Stepford::GraphBuilder;
 use Stepford::Types qw(
     ArrayOfClassPrefixes ArrayOfSteps Bool ClassName
     HashRef Logger Maybe PositiveInt Step
@@ -100,13 +99,14 @@ sub run {
         }
     );
 
-    my $plan = $self->_make_plan($final_steps);
+    my $root_graph
+        = $self->_make_root_graph_builder( $final_steps, $config )->graph;
 
     if ( $self->jobs > 1 ) {
-        $self->_run_parallel( $plan, $config, $force_step_execution );
+        $self->_run_parallel( $root_graph, $force_step_execution );
     }
     else {
-        $self->_run_sequential( $plan, $config, $force_step_execution );
+        $self->_run_sequential( $root_graph, $force_step_execution );
     }
 
     return;
@@ -114,36 +114,37 @@ sub run {
 
 sub _run_sequential {
     my $self                 = shift;
-    my $plan                 = shift;
-    my $config               = shift;
+    my $root_graph           = shift;
     my $force_step_execution = shift;
 
-    my $state = Stepford::Runner::State->new(
-        force_step_execution => $force_step_execution,
-        logger               => $self->logger,
-    );
+    $root_graph->traverse(
+        sub {
+            my $graph = shift;
 
-    for my $set ( $plan->step_sets ) {
-        $state->start_step_set;
+            return
+                unless $self->_should_run_step(
+                $graph,
+                $force_step_execution
+                );
 
-        for my $class ( @{$set} ) {
-            $self->_run_step_in_process( $state, $class, $config );
+            $self->logger->info( 'Running ' . $graph->step_class );
+
+            $self->_run_step_in_process($graph);
+            return;
         }
-    }
+    );
 }
 
 sub _run_parallel {
     my $self                 = shift;
-    my $plan                 = shift;
-    my $config               = shift;
+    my $root_graph           = shift;
     my $force_step_execution = shift;
 
     my $pm = Parallel::ForkManager->new( $self->jobs );
 
-    my $state = Stepford::Runner::State->new(
-        force_step_execution => $force_step_execution,
-        logger               => $self->logger,
-    );
+    my %graphs;
+    my $steps_finished_since_last_iteration = 0;
+
     $pm->run_on_finish(
         sub {
             my ( $pid, $exit_code, $step_name, $signal, $message )
@@ -168,123 +169,118 @@ sub _run_parallel {
                     . " with error:\n$message->{error}";
             }
             else {
-                $state->record_run_time( $message->{last_run_time} );
-                $state->record_productions( $message->{productions} );
+                my $graph = $graphs{$pid};
+                die "Could not find step graph for $pid"
+                    unless defined $graph;
+
+                $graph->set_last_run_time( $message->{last_run_time} );
+                $graph->set_step_productions_as_hashref(
+                    $message->{productions} );
+                $graph->set_is_being_processed(0);
+                $graph->set_has_been_processed(1);
+                $steps_finished_since_last_iteration++;
             }
         }
     );
 
-    for my $set ( $plan->step_sets ) {
-        $state->start_step_set;
+    while ( !$root_graph->has_been_processed ) {
+        $root_graph->traverse(
+            sub {
+                my $graph = shift;
 
-        for my $class ( @{$set} ) {
-            if ( $class->does('Stepford::Role::Step::Unserializable') ) {
-                $self->_run_step_in_process( $state, $class, $config );
-                next;
+                my $class = $graph->step_class;
+
+                return
+                    unless $self->_should_run_step(
+                    $graph,
+                    $force_step_execution
+                    );
+
+                unless ( $graph->is_serializable ) {
+                    $self->_run_step_in_process($graph);
+                    $steps_finished_since_last_iteration++;
+                    return;
+                }
+
+                if ( my $pid = $pm->start($class) ) {
+                    $graph->set_is_being_processed(1);
+
+                    $graphs{$pid} = $graph;
+
+                    $self->logger->debug(
+                        "Forked child to run $class - pid $pid");
+                    return;
+                }
+
+                # child
+                my $error;
+                try {
+                    $self->_run_step_in_process($graph);
+                }
+                catch {
+                    $error = $_;
+                };
+
+                my %message
+                    = defined $error
+                    ? ( error => $error . q{} )
+                    : (
+                    last_run_time => scalar $graph->last_run_time,
+                    productions   => $graph->step_productions_as_hashref,
+                    );
+
+                $pm->finish( 0, \%message );
             }
+        );
 
-            my $step = $self->_make_step_object( $state, $class, $config );
+        $pm->reap_finished_children;
 
-            if ( $state->step_is_up_to_date($step) ) {
-                $state->record_run_time( $step->last_run_time );
-                $state->record_productions( $step->productions_as_hashref );
-                next;
-            }
+        # If none of the child processes have finished, there is no point in
+        # wasting a bunch of CPU checking for steps that can be worked on. We
+        # wait until at least one step has finished.
+        $pm->wait_one_child unless $steps_finished_since_last_iteration;
 
-            if ( my $pid = $pm->start($class) ) {
-                $self->logger->debug("Forked child to run $class - pid $pid");
-                next;
-            }
-
-            my $error;
-            try {
-                $step->run;
-            }
-            catch {
-                $error = $_;
-            };
-
-            my %message
-                = defined $error
-                ? ( error => $error . q{} )
-                : (
-                last_run_time => scalar $step->last_run_time,
-                productions   => $step->productions_as_hashref,
-                );
-
-            $pm->finish( 0, \%message );
-        }
-
-        $self->logger->debug('Waiting for children');
-        $pm->wait_all_children;
+        $steps_finished_since_last_iteration = 0;
     }
+
+    $self->logger->debug('Waiting for children');
+    $pm->wait_all_children;
+}
+
+sub _should_run_step {
+    my $self                 = shift;
+    my $graph                = shift;
+    my $force_step_execution = shift;
+
+    return 0 unless $graph->can_run_step;
+
+    if ( $graph->step_is_up_to_date($force_step_execution) ) {
+        $self->logger->info( 'Skipping ' . $graph->step_class );
+        $graph->set_has_been_processed(1);
+        return 0;
+    }
+
+    return 1;
 }
 
 sub _run_step_in_process {
-    my $self   = shift;
-    my $state  = shift;
-    my $class  = shift;
-    my $config = shift;
+    my $self  = shift;
+    my $graph = shift;
 
-    my $step = $self->_make_step_object( $state, $class, $config );
-
-    $step->run
-        unless $state->step_is_up_to_date($step);
-
-    $state->record_run_time( $step->last_run_time );
-    $state->record_productions( $step->productions_as_hashref );
+    $self->_log_memory_usage( 'Before running ' . $graph->step_class );
+    $graph->run_step;
+    $self->_log_memory_usage( 'After running ' . $graph->step_class );
 
     return;
 }
 
-sub _make_step_object {
-    my $self   = shift;
-    my $state  = shift;
-    my $class  = shift;
-    my $config = shift;
-
-    $self->_log_memory_usage("Before constructing $class");
-
-    my $step = $state->make_step_object( $class, $config );
-
-    $self->_log_memory_usage("After constructing $class");
-
-    return $step;
-}
-
-sub _log_memory_usage {
-    my $self       = shift;
-    my $checkpoint = shift;
-
-    return unless $self->_memory_stats;
-
-    $self->_memory_stats->checkpoint($checkpoint);
-
-    # There's no way to get the total use so far without calling stop(), which
-    # is quite annoying. See
-    # https://github.com/celogeek/perl-memory-stats/issues/3.
-
-    ## no critic (Subroutines::ProtectPrivateSubs)
-    $self->logger->info(
-        sprintf(
-            'Total memory use since Stepford started is %d',
-            $self->_memory_stats->_memory_usage->[-1][1]
-                - $self->_memory_stats->_memory_usage->[0][1]
-        )
-    );
-    $self->logger->info(
-        sprintf(
-            'Memory since last checked is %d',
-            $self->_memory_stats->delta_usage
-        )
-    );
-}
-
-sub _make_plan {
+sub _make_root_graph_builder {
     my $self        = shift;
     my $final_steps = shift;
+    my $config      = shift;
 
-    return Stepford::Plan->new(
+    return Stepford::GraphBuilder->new(
+        config       => $config,
         step_classes => $self->_step_classes,
         final_steps  => $final_steps,
         logger       => $self->logger,
@@ -345,6 +341,34 @@ sub _build_logger {
     require Log::Dispatch::Null;
     return Log::Dispatch->new(
         outputs => [ [ Null => min_level => 'emerg' ] ] );
+}
+
+sub _log_memory_usage {
+    my $self       = shift;
+    my $checkpoint = shift;
+
+    return unless $self->_memory_stats;
+
+    $self->_memory_stats->checkpoint($checkpoint);
+
+    # There's no way to get the total use so far without calling stop(), which
+    # is quite annoying. See
+    # https://github.com/celogeek/perl-memory-stats/issues/3.
+
+    ## no critic (Subroutines::ProtectPrivateSubs)
+    $self->logger->info(
+        sprintf(
+            'Total memory use since Stepford started is %d',
+            $self->_memory_stats->_memory_usage->[-1][1]
+                - $self->_memory_stats->_memory_usage->[0][1]
+        )
+    );
+    $self->logger->info(
+        sprintf(
+            'Memory since last checked is %d',
+            $self->_memory_stats->delta_usage
+        )
+    );
 }
 
 __PACKAGE__->meta->make_immutable;

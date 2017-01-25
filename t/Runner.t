@@ -42,11 +42,14 @@ my $tempdir = tempdir( CLEANUP => 1 );
         $runner,
         'Test1::Step',
         ['CombineFiles'],
-        [
-            [qw( CreateA1 CreateA2 )],
-            ['UpdateFiles'],
-            ['CombineFiles'],
-        ],
+        {
+            'CombineFiles' => {
+                'UpdateFiles' => {
+                    'CreateA1' => undef,
+                    'CreateA2' => undef,
+                },
+            },
+        },
         'runner comes up with the right plan for simple steps'
     );
 
@@ -68,26 +71,25 @@ my $tempdir = tempdir( CLEANUP => 1 );
         'logged four dependency resolution messages'
     );
 
-    my $plan_message = first { $_->{level} eq 'info' } @messages;
-    like(
-        $plan_message->{message},
-        qr/Plan for Test1::Step::CombineFiles/,
+    my $graph_message = first { $_->{message} =~ /Graph for/ } @messages;
+
+    is(
+        $graph_message->{message},
+        <<'EOF',
+Graph for Test1::Step::CombineFiles:
+Stepford::FinalStep
+    Test1::Step::CombineFiles
+        Test1::Step::UpdateFiles
+            Test1::Step::CreateA1
+            Test1::Step::CreateA2
+EOF
         'logged plan when ->run was called'
     );
 
-    like(
-        $plan_message->{message},
-        qr/
-              \Q[ Test1::Step::CreateA1, Test1::Step::CreateA2 ] => \E
-              \Q[ Test1::Step::UpdateFiles ] => [ Test1::Step::CombineFiles ]\E
-          /x,
-        'logged a readable description of the plan'
-    );
-
     is(
-        $plan_message->{level},
-        'info',
-        'log level for plan description is info'
+        $graph_message->{level},
+        'debug',
+        'log level for graph description is debug'
     );
 
     my @object_constructor_messages
@@ -125,8 +127,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
     ok(
         (
             grep {
-                $_->{message}
-                    =~ /^\QLast run time for Test1::Step::CombineFiles is \E.+\QSkipping this step./
+                $_->{message} =~ /^\QTest1::Step::CombineFiles is up to date./
             } @messages
         ),
         'logged a message when skipping a step'
@@ -139,8 +140,8 @@ my $tempdir = tempdir( CLEANUP => 1 );
     );
 
     my %expect_run = (
-        CreateA1     => 2,
-        CreateA2     => 2,
+        CreateA1     => 1,
+        CreateA2     => 1,
         UpdateFiles  => 1,
         CombineFiles => 1,
     );
@@ -249,13 +250,13 @@ my $tempdir = tempdir( CLEANUP => 1 );
         $runner,
         'Test2::Step',
         'D',
-        [
-            ['A'],
-            ['B'],
-            ['C'],
-            ['D'],
-        ],
-        'runner does not include a given step more than once in a plan'
+        {
+            D => {
+                B => { A => undef },
+                C => { B => { A => undef } },
+            }
+        },
+        'repeated steps correctly show up in plan'
     );
 }
 
@@ -311,7 +312,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
     like(
         $e,
-        qr/\QThe set of dependencies for Test3::Step::\E(?:A|B)\Q is cyclical/,
+        qr/cyclic/,
         'cyclical dependencies cause the Planner constructor to die'
     );
 }
@@ -417,12 +418,13 @@ my $tempdir = tempdir( CLEANUP => 1 );
 }
 
 {
-    my $plan = Stepford::Runner->new(
+    my $builder = Stepford::Runner->new(
         step_namespaces => 'Test6::Step',
-    )->_make_plan( ['Test6::Step::A2'] );
+    )->_make_root_graph_builder( ['Test6::Step::A2'], {} );
 
+    ## no critic (Subroutines::ProtectPrivateSubs)
     is(
-        $plan->_production_map->{thing_a},
+        $builder->_production_map->{thing_a},
         'Test6::Step::A1',
         'when two steps have the same production, choose the one that sorts first'
     );
@@ -629,13 +631,26 @@ my $tempdir = tempdir( CLEANUP => 1 );
         $runner,
         'Test8::Step',
         [ 'Final1', 'Final2' ],
-        [
-            [ 'ForShared::A', 'ForShared::B' ],
-            ['Shared'],
-            [ 'ForFinal1::A', 'ForFinal2::A' ],
-            [ 'Final1',       'ForFinal2::B' ],
-            ['Final2'],
-        ],
+        {
+            Final1 => {
+                'ForFinal1::A' => => {
+                    Shared => {
+                        'ForShared::A' => undef,
+                        'ForShared::B' => undef,
+                    },
+                },
+            },
+            Final2 => {
+                'ForFinal2::B' => {
+                    'ForFinal2::A' => {
+                        Shared => {
+                            'ForShared::A' => undef,
+                            'ForShared::B' => undef,
+                        },
+                    },
+                },
+            },
+        },
         'runner comes up with an optimized plan for multiple final steps'
     );
 }
@@ -679,24 +694,19 @@ sub _test_plan {
     my $expect      = shift;
     my $desc        = shift;
 
-    $expect = [
-        map {
-            [ map { _prefix( $prefix, $_ ) } @{$_} ]
-        } @{$expect}
-    ];
-
-    # The final steps for the plan are the last steps in the $expect arrayref.
-    my @got = $runner->_make_plan(
+    my $got_str = $runner->_make_root_graph_builder(
         [
             map { _prefix( $prefix, $_ ) }
                 ref $final_steps ? @{$final_steps} : $final_steps
         ],
-    )->step_sets;
+        {},
+    )->graph->as_string;
 
-    push @{$expect}, ['Stepford::FinalStep'];
-
-    my $got_str    = _plan_as_str( \@got );
-    my $expect_str = _plan_as_str($expect);
+    my $expect_str = 'Stepford::FinalStep' . "\n" . _plan_as_str(
+        _prefix( $prefix, q{} ),
+        $expect,
+        1,
+    );
 
     eq_or_diff(
         $got_str,
@@ -708,13 +718,16 @@ sub _test_plan {
 sub _prefix { return join '::', @_[ 0, 1 ] }
 
 sub _plan_as_str {
-    my $plan = shift;
+    my $prefix = shift;
+    my $plan   = shift;
+    my $depth  = shift;
 
     my $str = q{};
-    for my $set ( @{$plan} ) {
-        $str .= join ' - ', @{$set};
-        $str .= "\n";
-    }
 
+    for my $step ( sort keys %{$plan} ) {
+        $str .= q{ } x ( $depth * 4 ) . $prefix . $step . "\n";
+        $str .= _plan_as_str( $prefix, $plan->{$step}, $depth + 1 )
+            if $plan->{$step};
+    }
     return $str;
 }

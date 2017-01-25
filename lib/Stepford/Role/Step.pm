@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.003010';
+our $VERSION = '0.004000';
 
 use List::AllUtils qw( any );
 use Stepford::LoggerWithMoniker;
@@ -152,7 +152,9 @@ run. You are encouraged to use L<Time::HiRes> as appropriate to provide hi-res
 timestamps.
 
 You can return C<undef> from this method to request an unconditional rebuild
-of this step, regardless of the C<last_run_time> of previous steps.
+of this step, regardless of the C<last_run_time> of previous steps. If a step
+has an C<undef> C<last_run_time> after being run, then all steps that depend
+on that step will also be re-run.
 
 =head1 OPTIONAL METHODS
 
