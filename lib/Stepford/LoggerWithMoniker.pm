@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.004000';
+our $VERSION = '0.004001';
 
 use Stepford::Types qw( Logger Str );
 
