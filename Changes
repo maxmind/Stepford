@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.004000 2017-01-25
+
 - The internals of Stepford were largely rewritten. The planner contained
   significant bugs that caused Stepford to run or skip steps incorrectly,
   particularly on complex trees.
