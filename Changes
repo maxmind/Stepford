@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+- Removed duplicate "Running.." message during sequential runs.
+
+
 0.004000 2017-01-25
 
 - The internals of Stepford were largely rewritten. The planner contained

@@ -127,8 +127,6 @@ sub _run_sequential {
                 $force_step_execution
                 );
 
-            $self->logger->info( 'Running ' . $graph->step_class );
-
             $self->_run_step_in_process($graph);
             return;
         }
