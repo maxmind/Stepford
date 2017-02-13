@@ -54,7 +54,11 @@ has last_run_time => (
     writer  => 'set_last_run_time',
     clearer => '_clear_last_run_time',
     lazy    => 1,
-    default => sub { shift->_step_object->last_run_time },
+    default => sub {
+        ## no critic (RequireInitializationForLocalVars)
+        local $_;
+        shift->_step_object->last_run_time;
+    },
 );
 
 has step_productions_as_hashref => (
@@ -63,7 +67,11 @@ has step_productions_as_hashref => (
     writer  => 'set_step_productions_as_hashref',
     clearer => '_clear_step_productions_as_hashref',
     lazy    => 1,
-    default => sub { shift->_step_object->productions_as_hashref },
+    default => sub {
+        ## no critic (RequireInitializationForLocalVars)
+        local $_;
+        shift->_step_object->productions_as_hashref;
+    },
 );
 
 has _children_graphs => (
@@ -139,7 +147,9 @@ sub traverse {
     my $self = shift;
     my $cb   = shift;
 
-    $_->traverse($cb) for @{ $self->_children_graphs };
+    for my $graph ( @{ $self->_children_graphs } ) {
+        $graph->traverse($cb);
+    }
     $cb->($self);
     return;
 }
@@ -238,8 +248,13 @@ sub run_step {
 
     $self->logger->info( 'Running ' . $self->step_class );
 
-    $self->_step_object->run;
-
+    {
+        # We use many list functions that will modify the underlying array
+        # they are called on if $_ is modified. We localize it for safety.
+        ## no critic (RequireInitializationForLocalVars)
+        local $_;
+        $self->_step_object->run;
+    }
     $self->set_is_being_processed(0);
     $self->set_has_been_processed(1);
     $self->_clear_last_run_time;
