@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+- Fixed an issue where Stepford would fail if $_ was modified by a
+  step.
 - Removed duplicate "Running.." message during sequential runs.
 
 
