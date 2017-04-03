@@ -82,7 +82,8 @@ sub BUILD {
 
 sub run {
     my $self = shift;
-    my ( $final_steps, $config, $force_step_execution ) = validated_list(
+    my ( $final_steps, $config, $force_step_execution, $dry_run )
+        = validated_list(
         \@_,
         final_steps => {
             isa    => ArrayOfSteps,
@@ -95,13 +96,21 @@ sub run {
         force_step_execution => {
             isa     => Bool,
             default => 0,
-        }
-    );
+        },
+        dry_run => {
+            isa     => Bool,
+            default => 0,
+        },
+        );
 
     my $root_graph
         = $self->_make_root_graph_builder( $final_steps, $config )->graph;
 
-    if ( $self->jobs > 1 ) {
+    if ($dry_run) {
+        ## no critic (InputOutput::RequireCheckedSyscalls)
+        print $root_graph->as_string;
+    }
+    elsif ( $self->jobs > 1 ) {
         $self->_run_parallel( $root_graph, $force_step_execution );
     }
     else {
