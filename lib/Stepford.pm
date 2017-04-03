@@ -62,8 +62,6 @@ __END__
 
 =head1 DESCRIPTION
 
-B<NOTE: This is alpha code. You have been warned!>
-
 Stepford provides a framework for running a set of steps that are dependent on
 other steps. At a high level, this is a lot like Make, Rake, etc. However, the
 actual implementation is fairly different. Currently, there is no DSL, no

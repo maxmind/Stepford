@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+- Stepford is not alpha. It is used for serious things.
+
 0.004001 2017-02-14
 
 - Fixed an issue where Stepford would fail if $_ was modified by a
