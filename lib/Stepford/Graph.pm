@@ -296,14 +296,30 @@ sub is_serializable {
     ( $self, @{ $self->_children_graphs } );
 }
 
+# Return a stringified dump of the graph with all its children steps. This is
+# primarily used by Stepford::Runner to print when a dry run has been requested.
+#
+# Its stringified form is suitable to be consumed by Graph::Easy in case more
+# sophisticated printing options are needed.
 sub as_string {
     my $self = shift;
-    my $depth = shift || 0;
 
-    return ( q{ } x ( 4 * $depth ) ) . $self->step_class . "\n" . join(
-        q{},
-        map { $_->as_string( $depth + 1 ) } @{ $self->_children_graphs }
+    require Graph::Easy;
+    my $graph = Graph::Easy->new;
+
+    $self->traverse(
+        sub {
+            my $node = shift;
+            if ( $node->step_class ne 'Stepford::FinalStep' ) {
+                foreach ( @{ $node->{_children_graphs} } ) {
+                    $graph->add_edge_once(
+                        $node->step_class => $_->step_class );
+                }
+            }
+        }
     );
+
+    return $graph->as_txt;
 }
 
 __PACKAGE__->meta->make_immutable;
