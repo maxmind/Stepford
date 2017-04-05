@@ -8,9 +8,8 @@ use lib 't/lib';
 use List::AllUtils qw( first );
 use Log::Dispatch;
 use Log::Dispatch::Array;
-use Path::Class qw( dir tempdir );
+use Path::Class qw( tempdir );
 use Stepford::Runner;
-use Time::HiRes 1.9726 qw( stat time );
 
 use Test::Differences;
 use Test::Fatal;

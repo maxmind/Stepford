@@ -67,7 +67,7 @@ is_deeply(
 {
     package FileStep;
 
-    use Path::Class qw( dir tempdir );
+    use Path::Class qw( tempdir );
     use Stepford::Types qw( File );
 
     use Moose;

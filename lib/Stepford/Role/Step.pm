@@ -10,7 +10,7 @@ use List::AllUtils qw( any );
 use Stepford::LoggerWithMoniker;
 use Stepford::Trait::StepDependency;
 use Stepford::Trait::StepProduction;
-use Stepford::Types qw( ArrayOfDependencies Logger Maybe PositiveNum Str );
+use Stepford::Types qw( Logger );
 
 use Moose::Role;
 
