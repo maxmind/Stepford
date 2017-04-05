@@ -6,8 +6,7 @@ use namespace::autoclean;
 
 our $VERSION = '0.004002';
 
-use List::AllUtils qw( all any first_index max none sort_by );
-use Scalar::Util qw( refaddr );
+use List::AllUtils qw( all none );
 use Stepford::Error;
 use Stepford::Types qw(
     ArrayRef

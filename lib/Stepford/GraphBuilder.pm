@@ -6,11 +6,11 @@ use namespace::autoclean;
 
 our $VERSION = '0.004002';
 
-use List::AllUtils qw( all sort_by uniq );
+use List::AllUtils qw( sort_by uniq );
 use Stepford::Error;
 use Stepford::FinalStep;
 use Stepford::Graph ();
-use Stepford::Types qw( ArrayRef ArrayOfSteps ClassName HashRef Logger Step );
+use Stepford::Types qw( ArrayOfSteps HashRef Logger Step );
 
 use Moose;
 use MooseX::StrictConstructor;

@@ -6,11 +6,10 @@ use namespace::autoclean;
 
 our $VERSION = '0.004002';
 
-use List::AllUtils qw( first max );
+use List::AllUtils qw( first );
 use Module::Pluggable::Object;
 use MooseX::Params::Validate qw( validated_list );
 use Parallel::ForkManager;
-use Scalar::Util qw( blessed );
 use Stepford::Error;
 use Stepford::GraphBuilder;
 use Stepford::Types qw(

@@ -7,7 +7,6 @@ use namespace::autoclean;
 our $VERSION = '0.004002';
 
 use Carp qw( croak );
-use File::Temp;
 use Path::Class qw( file );
 use Scope::Guard qw( guard );
 use Stepford::Types qw( File );

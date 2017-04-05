@@ -6,9 +6,8 @@ use warnings;
 our $VERSION = '0.004002';
 
 use MooseX::Types::Common::String qw( NonEmptyStr );
-use MooseX::Types::Moose qw( ArrayRef Defined Str );
+use MooseX::Types::Moose qw( ArrayRef Str );
 use MooseX::Types::Path::Class qw( File );
-use Scalar::Util qw( blessed );
 
 use MooseX::Types -declare => [
     qw(
