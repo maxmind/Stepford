@@ -161,16 +161,6 @@ in place.
 It is not currently possible for a class to have optional dependencies. This
 may be added in the future if it turns out to be useful.
 
-=head1 FUTURE FEATURES
-
-There are several very obvious things that should be added to this framework:
-
-=over 4
-
-=item * Dry runs
-
-=back
-
 =head1 VERSIONING POLICY
 
 This module uses semantic versioning as described by

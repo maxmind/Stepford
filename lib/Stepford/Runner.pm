@@ -528,6 +528,37 @@ which steps are up to date and do not need re-executing. Even with this set
 each step will only be executed once per run regardless of how many other
 steps depend on it during execution.
 
+=item * dry_run
+
+This argument defaults to C<none>.
+
+When set to L<a valid output mode|https://metacpan.org/pod/Graph::Easy#Output>,
+this option makes Stepford calculate the steps that need to be executed, but
+stop before actually executing them. Instead, the step graph will be dumped to
+STDOUT using one of the following output methods available in L<Graph::Easy>:
+
+=over 4
+
+=item * txt
+
+=item * ascii
+
+=item * boxart
+
+=item * svg
+
+=item * graphviz
+
+=item * graphml
+
+=item * vcg
+
+=item * gdl
+
+=back
+
+These will be mapped directly to the corresponding methods in that module.
+
 =back
 
 =head2 $runner->step_namespaces
