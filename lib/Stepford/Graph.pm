@@ -300,8 +300,6 @@ sub is_serializable {
 # Return a stringified dump of the graph with all its children steps. This is
 # primarily used by Stepford::Runner to print when a dry run has been requested.
 #
-# Its stringified form is suitable to be consumed by Graph::Easy in case more
-# sophisticated printing options are needed.
 sub as_string {
     my $self = shift;
     my $method = shift // 'txt';
