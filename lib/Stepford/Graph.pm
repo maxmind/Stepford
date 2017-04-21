@@ -304,6 +304,8 @@ sub is_serializable {
 # sophisticated printing options are needed.
 sub as_string {
     my $self = shift;
+    my $method = shift // 'txt';
+    $method = 'as_' . $method;
 
     my $graph = Graph::Easy->new;
 
@@ -319,7 +321,7 @@ sub as_string {
         }
     );
 
-    return $graph->as_txt;
+    return $graph->$method;
 }
 
 __PACKAGE__->meta->make_immutable;

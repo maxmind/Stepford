@@ -14,7 +14,7 @@ use Stepford::Error;
 use Stepford::GraphBuilder;
 use Stepford::Types qw(
     ArrayOfClassPrefixes ArrayOfSteps Bool ClassName
-    HashRef Logger Maybe PositiveInt Step
+    HashRef Logger Maybe PositiveInt Step OutputMode
 );
 use Try::Tiny;
 
@@ -98,17 +98,17 @@ sub run {
             default => 0,
         },
         dry_run => {
-            isa     => Bool,
-            default => 0,
+            isa     => Bool | OutputMode,
+            default => 'none',
         },
         );
 
     my $root_graph
         = $self->_make_root_graph_builder( $final_steps, $config )->graph;
 
-    if ($dry_run) {
+    if ( $dry_run ne 'none' ) {
         ## no critic (InputOutput::RequireCheckedSyscalls)
-        print $root_graph->as_string;
+        print $root_graph->as_string($dry_run);
     }
     elsif ( $self->jobs > 1 ) {
         $self->_run_parallel( $root_graph, $force_step_execution );

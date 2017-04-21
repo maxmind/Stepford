@@ -113,7 +113,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
     my ( $stdout, $stderr, @result ) = capture {
         $runner->run(
             final_steps => 'DryTest::Step::D',
-            dry_run     => 1,
+            dry_run     => 'txt',
         );
     };
 
