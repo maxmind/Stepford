@@ -6,6 +6,7 @@ use namespace::autoclean;
 
 our $VERSION = '0.004002';
 
+use Graph::Easy;
 use List::AllUtils qw( all none );
 use Stepford::Error;
 use Stepford::Types qw(
@@ -18,7 +19,6 @@ use Stepford::Types qw(
     Step
 );
 use Try::Tiny qw( catch try );
-use Graph::Easy;
 
 use Moose;
 use MooseX::StrictConstructor;
