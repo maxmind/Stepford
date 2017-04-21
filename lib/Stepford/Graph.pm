@@ -18,6 +18,7 @@ use Stepford::Types qw(
     Step
 );
 use Try::Tiny qw( catch try );
+use Graph::Easy;
 
 use Moose;
 use MooseX::StrictConstructor;
@@ -304,7 +305,6 @@ sub is_serializable {
 sub as_string {
     my $self = shift;
 
-    require Graph::Easy;
     my $graph = Graph::Easy->new;
 
     $self->traverse(
