@@ -311,9 +311,9 @@ sub as_string {
         sub {
             my $node = shift;
             if ( $node->step_class ne 'Stepford::FinalStep' ) {
-                foreach ( @{ $node->{_children_graphs} } ) {
+                foreach my $child ( @{ $node->_children_graphs } ) {
                     $graph->add_edge_once(
-                        $node->step_class => $_->step_class );
+                        $node->step_class => $child->step_class );
                 }
             }
         }
