@@ -8,6 +8,7 @@ our $VERSION = '0.004002';
 use MooseX::Types::Common::String qw( NonEmptyStr );
 use MooseX::Types::Moose qw( ArrayRef Str );
 use MooseX::Types::Path::Class qw( File );
+use Moose::Util::TypeConstraints qw( enum );
 
 use MooseX::Types -declare => [
     qw(
@@ -18,10 +19,13 @@ use MooseX::Types -declare => [
         Logger
         PossibleClassName
         Step
+        OutputMode
         )
 ];
 
 use namespace::clean;
+
+enum OutputMode, [qw[ none txt boxart ascii svg graphviz graphml vcg gdl ]];
 
 subtype PossibleClassName, as Str, inline_as {
     ## no critic (Subroutines::ProtectPrivateSubs)
@@ -55,6 +59,8 @@ role_type Step, { role => 'Stepford::Role::Step' };
 subtype ArrayOfSteps, as ArrayRef [Step];
 
 coerce ArrayOfSteps, from Step, via { [$_] };
+
+no Moose::Util::TypeConstraints;
 
 1;
 

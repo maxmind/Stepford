@@ -6,6 +6,7 @@ use namespace::autoclean;
 
 our $VERSION = '0.004002';
 
+use Graph::Easy;
 use List::AllUtils qw( all none );
 use Stepford::Error;
 use Stepford::Types qw(
@@ -296,14 +297,29 @@ sub is_serializable {
     ( $self, @{ $self->_children_graphs } );
 }
 
+# Return a stringified dump of the graph with all its children steps. This is
+# primarily used by Stepford::Runner to print when a dry run has been requested.
+#
 sub as_string {
     my $self = shift;
-    my $depth = shift || 0;
+    my $method = shift // 'txt';
+    $method = 'as_' . $method;
 
-    return ( q{ } x ( 4 * $depth ) ) . $self->step_class . "\n" . join(
-        q{},
-        map { $_->as_string( $depth + 1 ) } @{ $self->_children_graphs }
+    my $graph = Graph::Easy->new;
+
+    $self->traverse(
+        sub {
+            my $node = shift;
+            if ( $node->step_class ne 'Stepford::FinalStep' ) {
+                foreach my $child ( @{ $node->_children_graphs } ) {
+                    $graph->add_edge_once(
+                        $node->step_class => $child->step_class );
+                }
+            }
+        }
     );
+
+    return $graph->$method;
 }
 
 __PACKAGE__->meta->make_immutable;
