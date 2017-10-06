@@ -135,7 +135,19 @@ sub _run_sequential {
                 $force_step_execution
                 );
 
-            $self->_run_step_in_process($graph);
+            # XXX: Error logging added for congruence with _run_parallel.
+            # It should be removed when error handling approach is made more
+            # consistent throughout the distribution.
+            my $error;
+            try {
+                $self->_run_step_in_process($graph);
+            }
+            catch {
+                $error = $_;
+                $self->logger->error($error);
+            };
+            die $error if defined $error;
+
             return;
         }
     );
@@ -225,6 +237,7 @@ sub _run_parallel {
                 }
                 catch {
                     $error = $_;
+                    $self->logger->error($error);
                 };
 
                 my %message
