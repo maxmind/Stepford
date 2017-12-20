@@ -297,9 +297,9 @@ my $tempdir = tempdir( CLEANUP => 1 );
     my $e = exception {
         Stepford::Runner->new(
             step_namespaces => 'Test3::Step',
-            )->run(
+        )->run(
             final_steps => 'Test3::Step::B',
-            );
+        );
     };
 
     like(
@@ -333,9 +333,9 @@ my $tempdir = tempdir( CLEANUP => 1 );
     my $e = exception {
         Stepford::Runner->new(
             step_namespaces => 'Test4::Step',
-            )->run(
+        )->run(
             final_steps => 'Test4::Step::A',
-            );
+        );
     };
 
     like(
@@ -367,9 +367,9 @@ my $tempdir = tempdir( CLEANUP => 1 );
     my $e = exception {
         Stepford::Runner->new(
             step_namespaces => 'Test5::Step',
-            )->run(
+        )->run(
             final_steps => 'Test5::Step::A',
-            );
+        );
     };
 
     like(
@@ -654,9 +654,9 @@ my $tempdir = tempdir( CLEANUP => 1 );
     my $e = exception {
         Stepford::Runner->new(
             step_namespaces => 'Test9::Step',
-            )->run(
+        )->run(
             final_steps => 'Test9::Step::A',
-            );
+        );
     };
 
     like(

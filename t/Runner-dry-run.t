@@ -123,7 +123,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
         $runner->_make_root_graph_builder(
             ['DryTest::Step::D'],
             {},
-            )->graph->as_string,
+        )->graph->as_string,
         'printed graph as_string'
     );
 

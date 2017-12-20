@@ -114,7 +114,7 @@ sub _constructor_args_for_class {
     for my $init_arg (
         grep { defined }
         map  { $_->init_arg } $class->meta->get_all_attributes
-        ) {
+    ) {
 
         $args{$init_arg} = $config->{$init_arg}
             if exists $config->{$init_arg};
@@ -301,7 +301,7 @@ sub is_serializable {
 # primarily used by Stepford::Runner to print when a dry run has been requested.
 #
 sub as_string {
-    my $self = shift;
+    my $self   = shift;
     my $method = shift // 'txt';
     $method = 'as_' . $method;
 

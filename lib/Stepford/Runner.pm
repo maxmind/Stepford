@@ -307,7 +307,7 @@ sub _build_step_classes {
             search_path => [ $self->step_namespaces ],
             require     => 1,
         )->plugins
-        ) {
+    ) {
 
         # We need to skip roles
         next unless $class->isa('Moose::Object');
