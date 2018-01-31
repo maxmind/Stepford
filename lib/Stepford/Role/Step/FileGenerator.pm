@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.005000';
+our $VERSION = '0.005001';
 
 use Carp qw( croak );
 use List::AllUtils qw( any max );
