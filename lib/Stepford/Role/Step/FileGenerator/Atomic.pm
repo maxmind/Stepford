@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.004002';
+our $VERSION = '0.005000';
 
 use Carp qw( croak );
 use Path::Class qw( file );

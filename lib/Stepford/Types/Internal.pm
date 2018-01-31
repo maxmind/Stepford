@@ -3,7 +3,7 @@ package Stepford::Types::Internal;
 use strict;
 use warnings;
 
-our $VERSION = '0.004002';
+our $VERSION = '0.005000';
 
 use MooseX::Types::Common::String qw( NonEmptyStr );
 use MooseX::Types::Moose qw( ArrayRef Str );
