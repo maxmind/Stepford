@@ -6,6 +6,8 @@
   types in addition to MooseX::Types::Path::Class types for files.
 - The unused and undocumented Stepford::Types::Internal::ArrayOfFiles type
   was removed.
+- Graph::Easy is now used to generate the string representation of a
+  Stepford::Graph. PR by José Joaquín Atria. GitHub #35.
 
 
 0.004001 2017-02-14
