@@ -51,7 +51,7 @@ around run => sub {
     my $self = shift;
 
     my $pre_commit = $self->pre_commit_file;
-    my $guard = guard { $pre_commit->remove if -f $pre_commit };
+    my $guard      = guard { $pre_commit->remove if -f $pre_commit };
 
     $self->$orig(@_);
 
