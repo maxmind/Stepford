@@ -212,7 +212,7 @@ sub step_is_up_to_date {
     }
 
     my $step_last_run_time = $self->last_run_time;
-    my @newer_children = grep { $_->last_run_time > $step_last_run_time }
+    my @newer_children     = grep { $_->last_run_time > $step_last_run_time }
         @{ $self->_children_graphs };
     unless (@newer_children) {
         $self->logger->info("$step_class is up to date.");
