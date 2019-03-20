@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.005001';
+our $VERSION = '0.006000';
 
 use List::AllUtils qw( first );
 use Module::Pluggable::Object;
@@ -14,7 +14,7 @@ use Stepford::Error;
 use Stepford::GraphBuilder;
 use Stepford::Types qw(
     ArrayOfClassPrefixes ArrayOfSteps Bool ClassName
-    HashRef Logger Maybe PositiveInt Step OutputMode
+    HashRef Logger Maybe PositiveInt Step
 );
 use Try::Tiny;
 
@@ -98,7 +98,7 @@ sub run {
             default => 0,
         },
         dry_run => {
-            isa     => Bool | OutputMode,
+            isa     => Bool,
             default => 'none',
         },
         );
@@ -530,34 +530,8 @@ steps depend on it during execution.
 
 =item * dry_run
 
-This argument defaults to C<none>.
-
-When set to L<a valid output mode|https://metacpan.org/pod/Graph::Easy#Output>,
-this option makes Stepford calculate the steps that need to be executed, but
-stop before actually executing them. Instead, the step graph will be dumped to
-STDOUT using one of the following output methods available in L<Graph::Easy>:
-
-=over 4
-
-=item * txt
-
-=item * ascii
-
-=item * boxart
-
-=item * svg
-
-=item * graphviz
-
-=item * graphml
-
-=item * vcg
-
-=item * gdl
-
-=back
-
-These will be mapped directly to the corresponding methods in that module.
+The argument is a boolean that defaults to false. When set to a true value,
+Stepford prints out the steps that need to be executed.
 
 =back
 
