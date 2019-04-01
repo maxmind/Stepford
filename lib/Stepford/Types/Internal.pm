@@ -3,7 +3,7 @@ package Stepford::Types::Internal;
 use strict;
 use warnings;
 
-our $VERSION = '0.005001';
+our $VERSION = '0.006000';
 
 use MooseX::Types::Common::String qw( NonEmptyStr );
 use MooseX::Types::Moose qw( ArrayRef Str );
@@ -17,13 +17,10 @@ use MooseX::Types -declare => [
         Logger
         PossibleClassName
         Step
-        OutputMode
         )
 ];
 
 use namespace::clean;
-
-enum OutputMode, [qw[ none txt boxart ascii svg graphviz graphml vcg gdl ]];
 
 subtype PossibleClassName, as Str, inline_as {
     ## no critic (Subroutines::ProtectPrivateSubs)

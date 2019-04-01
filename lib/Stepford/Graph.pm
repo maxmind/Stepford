@@ -4,9 +4,8 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.005001';
+our $VERSION = '0.006000';
 
-use Graph::Easy;
 use List::AllUtils qw( all none );
 use Stepford::Error;
 use Stepford::Types qw(
@@ -297,29 +296,42 @@ sub is_serializable {
     ( $self, @{ $self->_children_graphs } );
 }
 
-# Return a stringified dump of the graph with all its children steps. This is
-# primarily used by Stepford::Runner to print when a dry run has been requested.
-#
 sub as_string {
-    my $self   = shift;
-    my $method = shift // 'txt';
-    $method = 'as_' . $method;
+    my $self = shift;
 
-    my $graph = Graph::Easy->new;
-
-    $self->traverse(
-        sub {
-            my $node = shift;
-            if ( $node->step_class ne 'Stepford::FinalStep' ) {
-                foreach my $child ( @{ $node->_children_graphs } ) {
-                    $graph->add_edge_once(
-                        $node->step_class => $child->step_class );
-                }
-            }
-        }
+    return join(
+        "\n",
+        (
+            map { sprintf( '[ %s ] --> [ %s ]', @$_ ) }
+                _parent_child_pairs($self)
+        ),
+        q{}
     );
+}
 
-    return $graph->$method;
+sub _parent_child_pairs {
+    my $parent = shift;
+
+    my @pairs;
+    my @parents = ($parent);
+    my %seen;
+    while (@parents) {
+        my $current_parent = shift @parents;
+        my @children       = @{ $current_parent->_children_graphs };
+
+        my @children_step_classes     = map { $_->step_class } @children;
+        my $current_parent_step_class = $current_parent->step_class;
+
+        push @pairs,
+            map { [ $current_parent_step_class, $_ ] } @children_step_classes;
+
+        push @parents,
+            grep { !exists $seen{ $_->step_class } } @children;
+
+        @seen{@children_step_classes} = ();
+    }
+
+    return @pairs;
 }
 
 __PACKAGE__->meta->make_immutable;
