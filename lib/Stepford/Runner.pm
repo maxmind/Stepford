@@ -531,7 +531,8 @@ steps depend on it during execution.
 =item * dry_run
 
 The argument is a boolean that defaults to false. When set to a true value,
-Stepford prints out the steps that need to be executed.
+Stepford prints out the steps that need to be executed and exits without
+executing them.
 
 =back
 
