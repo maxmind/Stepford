@@ -3,7 +3,7 @@ package Stepford::Types;
 use strict;
 use warnings;
 
-our $VERSION = '0.006000';
+our $VERSION = '0.006001';
 
 use MooseX::Types::Common::Numeric;
 use MooseX::Types::Moose;
