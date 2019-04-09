@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.006000 2019-04-09
+
 - Stepford no longer depends on Graph::Easy. The output of Stepford::Graph's
   as_string method is now always a representation similar to Graph::Easy's
   txt representation. The method no longer takes an output format.
