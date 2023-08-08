@@ -154,19 +154,19 @@ sub _run_parallel {
             = @_[ 0 .. 3, 5 ];
 
         if ($exit_code) {
-            $pm->wait_all_children;
+            _kill_all_children($pm);
             die "Child process $pid failed while running step $step_name"
                 . " (exited with code $exit_code)";
         }
         elsif ( !$message ) {
-            $pm->wait_all_children;
+            _kill_all_children($pm);
             my $error = "Child process $pid did not send back any data";
             $error .= " while running step $step_name";
             $error .= " (exited because of signal $signal)" if $signal;
             die $error;
         }
         elsif ( $message->{error} ) {
-            $pm->wait_all_children;
+            _kill_all_children($pm);
             die "Child process $pid died"
                 . " while running step $step_name"
                 . " with error:\n$message->{error}";
@@ -244,6 +244,14 @@ sub _run_parallel {
 
     $self->logger->debug('Waiting for children');
     $pm->wait_all_children;
+}
+
+sub _kill_all_children {
+    my $pm = shift;
+
+    for my $pid ( $pm->running_procs ) {
+        kill 'TERM', $pid;
+    }
 }
 
 sub _should_run_step {
