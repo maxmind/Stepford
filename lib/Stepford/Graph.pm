@@ -224,7 +224,7 @@ sub step_is_up_to_date {
             . '. The following children have newer last run times: '
             . join ', ',
         map { $_->step_class . ' (' . $_->last_run_time . ')' }
-            @newer_children
+            @newer_children,
     );
 
     return 0;
@@ -290,10 +290,8 @@ sub is_serializable {
 
     # A step can be serialized as long as it and all of its children do not
     # implement Stepford::Role::Step::Unserializable
-    none {
-        $_->step_class->does('Stepford::Role::Step::Unserializable')
-    }
-    ( $self, @{ $self->_children_graphs } );
+    none { $_->step_class->does('Stepford::Role::Step::Unserializable') }
+        ( $self, @{ $self->_children_graphs } );
 }
 
 sub as_string {
@@ -305,7 +303,7 @@ sub as_string {
             map { sprintf( '[ %s ] --> [ %s ]', @$_ ) }
                 _parent_child_pairs($self)
         ),
-        q{}
+        q{},
     );
 }
 

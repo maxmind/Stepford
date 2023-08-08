@@ -125,20 +125,18 @@ sub _run_sequential {
     my $root_graph           = shift;
     my $force_step_execution = shift;
 
-    $root_graph->traverse(
-        sub {
-            my $graph = shift;
+    $root_graph->traverse( sub {
+        my $graph = shift;
 
-            return
-                unless $self->_should_run_step(
-                $graph,
-                $force_step_execution
-                );
+        return
+            unless $self->_should_run_step(
+            $graph,
+            $force_step_execution,
+            );
 
-            $self->_run_step_in_process($graph);
-            return;
-        }
-    );
+        $self->_run_step_in_process($graph);
+        return;
+    } );
 }
 
 sub _run_parallel {
@@ -151,93 +149,88 @@ sub _run_parallel {
     my %graphs;
     my $steps_finished_since_last_iteration = 0;
 
-    $pm->run_on_finish(
-        sub {
-            my ( $pid, $exit_code, $step_name, $signal, $message )
-                = @_[ 0 .. 3, 5 ];
+    $pm->run_on_finish( sub {
+        my ( $pid, $exit_code, $step_name, $signal, $message )
+            = @_[ 0 .. 3, 5 ];
 
-            if ($exit_code) {
-                $pm->wait_all_children;
-                die "Child process $pid failed while running step $step_name"
-                    . " (exited with code $exit_code)";
-            }
-            elsif ( !$message ) {
-                $pm->wait_all_children;
-                my $error = "Child process $pid did not send back any data";
-                $error .= " while running step $step_name";
-                $error .= " (exited because of signal $signal)" if $signal;
-                die $error;
-            }
-            elsif ( $message->{error} ) {
-                $pm->wait_all_children;
-                die "Child process $pid died"
-                    . " while running step $step_name"
-                    . " with error:\n$message->{error}";
-            }
-            else {
-                my $graph = $graphs{$pid};
-                die "Could not find step graph for $pid"
-                    unless defined $graph;
-
-                $graph->set_last_run_time( $message->{last_run_time} );
-                $graph->set_step_productions_as_hashref(
-                    $message->{productions} );
-                $graph->set_is_being_processed(0);
-                $graph->set_has_been_processed(1);
-                $steps_finished_since_last_iteration++;
-            }
+        if ($exit_code) {
+            $pm->wait_all_children;
+            die "Child process $pid failed while running step $step_name"
+                . " (exited with code $exit_code)";
         }
-    );
+        elsif ( !$message ) {
+            $pm->wait_all_children;
+            my $error = "Child process $pid did not send back any data";
+            $error .= " while running step $step_name";
+            $error .= " (exited because of signal $signal)" if $signal;
+            die $error;
+        }
+        elsif ( $message->{error} ) {
+            $pm->wait_all_children;
+            die "Child process $pid died"
+                . " while running step $step_name"
+                . " with error:\n$message->{error}";
+        }
+        else {
+            my $graph = $graphs{$pid};
+            die "Could not find step graph for $pid"
+                unless defined $graph;
+
+            $graph->set_last_run_time( $message->{last_run_time} );
+            $graph->set_step_productions_as_hashref(
+                $message->{productions} );
+            $graph->set_is_being_processed(0);
+            $graph->set_has_been_processed(1);
+            $steps_finished_since_last_iteration++;
+        }
+    } );
 
     while ( !$root_graph->has_been_processed ) {
-        $root_graph->traverse(
-            sub {
-                my $graph = shift;
+        $root_graph->traverse( sub {
+            my $graph = shift;
 
-                my $class = $graph->step_class;
+            my $class = $graph->step_class;
 
-                return
-                    unless $self->_should_run_step(
-                    $graph,
-                    $force_step_execution
-                    );
+            return
+                unless $self->_should_run_step(
+                $graph,
+                $force_step_execution,
+                );
 
-                unless ( $graph->is_serializable ) {
-                    $self->_run_step_in_process($graph);
-                    $steps_finished_since_last_iteration++;
-                    return;
-                }
-
-                if ( my $pid = $pm->start($class) ) {
-                    $graph->set_is_being_processed(1);
-
-                    $graphs{$pid} = $graph;
-
-                    $self->logger->debug(
-                        "Forked child to run $class - pid $pid");
-                    return;
-                }
-
-                # child
-                my $error;
-                try {
-                    $self->_run_step_in_process($graph);
-                }
-                catch {
-                    $error = $_;
-                };
-
-                my %message
-                    = defined $error
-                    ? ( error => $error . q{} )
-                    : (
-                    last_run_time => scalar $graph->last_run_time,
-                    productions   => $graph->step_productions_as_hashref,
-                    );
-
-                $pm->finish( 0, \%message );
+            unless ( $graph->is_serializable ) {
+                $self->_run_step_in_process($graph);
+                $steps_finished_since_last_iteration++;
+                return;
             }
-        );
+
+            if ( my $pid = $pm->start($class) ) {
+                $graph->set_is_being_processed(1);
+
+                $graphs{$pid} = $graph;
+
+                $self->logger->debug("Forked child to run $class - pid $pid");
+                return;
+            }
+
+            # child
+            my $error;
+            try {
+                $self->_run_step_in_process($graph);
+            }
+            catch {
+                $error = $_;
+            };
+
+            my %message
+                = defined $error
+                ? ( error => $error . q{} )
+                : (
+                last_run_time => scalar $graph->last_run_time,
+                productions   => $graph->step_productions_as_hashref,
+                );
+
+            $pm->finish( 0, \%message );
+        } );
 
         $pm->reap_finished_children;
 
@@ -362,19 +355,15 @@ sub _log_memory_usage {
     # https://github.com/celogeek/perl-memory-stats/issues/3.
 
     ## no critic (Subroutines::ProtectPrivateSubs)
-    $self->logger->info(
-        sprintf(
-            'Total memory use since Stepford started is %d',
-            $self->_memory_stats->_memory_usage->[-1][1]
-                - $self->_memory_stats->_memory_usage->[0][1]
-        )
-    );
-    $self->logger->info(
-        sprintf(
-            'Memory since last checked is %d',
-            $self->_memory_stats->delta_usage
-        )
-    );
+    $self->logger->info( sprintf(
+        'Total memory use since Stepford started is %d',
+        $self->_memory_stats->_memory_usage->[-1][1]
+            - $self->_memory_stats->_memory_usage->[0][1],
+    ) );
+    $self->logger->info( sprintf(
+        'Memory since last checked is %d',
+        $self->_memory_stats->delta_usage,
+    ) );
 }
 
 __PACKAGE__->meta->make_immutable;

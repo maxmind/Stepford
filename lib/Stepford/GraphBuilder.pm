@@ -121,9 +121,9 @@ sub _create_graph {
     }
 
     my $graph = Stepford::Graph->new(
-        config     => $self->config,
-        logger     => $self->logger,
-        step_class => $step_class,
+        config          => $self->config,
+        logger          => $self->logger,
+        step_class      => $step_class,
         children_graphs =>
             $self->_create_children_graphs( $step_class, $childrens_parents ),
     );

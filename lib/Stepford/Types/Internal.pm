@@ -9,16 +9,14 @@ use MooseX::Types::Common::String qw( NonEmptyStr );
 use MooseX::Types::Moose qw( ArrayRef Str );
 use Moose::Util::TypeConstraints qw( enum );
 
-use MooseX::Types -declare => [
-    qw(
-        ArrayOfClassPrefixes
-        ArrayOfDependencies
-        ArrayOfSteps
-        Logger
-        PossibleClassName
-        Step
-        )
-];
+use MooseX::Types -declare => [ qw(
+    ArrayOfClassPrefixes
+    ArrayOfDependencies
+    ArrayOfSteps
+    Logger
+    PossibleClassName
+    Step
+) ];
 
 use namespace::clean;
 
