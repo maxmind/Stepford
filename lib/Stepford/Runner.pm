@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.006001';
+our $VERSION = '0.006002';
 
 use List::AllUtils qw( first );
 use Module::Pluggable::Object;
@@ -250,6 +250,9 @@ sub _kill_all_children {
     my $pm = shift;
 
     for my $pid ( $pm->running_procs ) {
+
+        # This is a best-effort attempt to kill direct children.
+        ## no critic (RequireCheckedSyscalls)
         kill 'TERM', $pid;
     }
 }
