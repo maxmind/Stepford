@@ -250,6 +250,9 @@ sub _kill_all_children {
     my $pm = shift;
 
     for my $pid ( $pm->running_procs ) {
+
+        # This is a best-effort attempt to kill direct children.
+        ## no critic (RequireCheckedSyscalls)
         kill 'TERM', $pid;
     }
 }
