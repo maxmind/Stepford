@@ -30,6 +30,8 @@ jobs:
     name: "Build ${{ matrix.perl-version }} test on ${{ matrix.platform }}"
     steps:
       - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
       - uses: shogo82148/actions-setup-perl@v1
         with:
           perl-version: ${{ matrix.perl-version }}
